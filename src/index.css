@@ -1,0 +1,558 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * THÈMES — 5 thèmes complets via variables CSS (canaux RGB)
+ * ============================================================ */
+
+/* 1. Sombre OLED : noir pur #09090b, accents violet électrique */
+:root,
+[data-theme='oled'] {
+  --bg: 9 9 11;
+  --surface: 16 16 20;
+  --card: 24 24 29;
+  --hover: 38 38 46;
+  --line: 42 42 50;
+  --fg: 250 250 252;
+  --muted: 158 158 172;
+  --accent: 139 43 255;
+  --accent2: 217 70 239;
+  --onaccent: 255 255 255;
+  --danger: 239 68 68;
+  color-scheme: dark;
+}
+
+/* 2. Clair minimaliste : blanc pur, cartes gris perle */
+[data-theme='light'] {
+  --bg: 255 255 255;
+  --surface: 248 248 250;
+  --card: 241 241 245;
+  --hover: 231 231 238;
+  --line: 226 226 233;
+  --fg: 17 17 22;
+  --muted: 102 102 116;
+  --accent: 124 58 237;
+  --accent2: 192 38 211;
+  --onaccent: 255 255 255;
+  --danger: 220 38 38;
+  color-scheme: light;
+}
+
+/* 3. Discord Midnight : gris ardoise #1e1f22 / #2b2d31, accents blurple */
+[data-theme='midnight'] {
+  --bg: 30 31 34;
+  --surface: 43 45 49;
+  --card: 49 51 56;
+  --hover: 64 66 73;
+  --line: 62 64 71;
+  --fg: 242 243 245;
+  --muted: 148 155 164;
+  --accent: 88 101 242;
+  --accent2: 235 69 158;
+  --onaccent: 255 255 255;
+  --danger: 237 66 69;
+  color-scheme: dark;
+}
+
+/* 4. Néon Cyber : bleu nuit profond, reflets magenta / cyan */
+[data-theme='neon'] {
+  --bg: 6 8 28;
+  --surface: 11 14 42;
+  --card: 18 22 58;
+  --hover: 30 36 84;
+  --line: 40 48 104;
+  --fg: 232 240 255;
+  --muted: 132 148 198;
+  --accent: 255 46 196;
+  --accent2: 34 230 255;
+  --onaccent: 12 4 32;
+  --danger: 255 82 100;
+  color-scheme: dark;
+}
+
+/* 5. Émeraude Studio : anthracite chaud, accents vert Spotify */
+[data-theme='emerald'] {
+  --bg: 22 21 19;
+  --surface: 31 29 27;
+  --card: 40 38 35;
+  --hover: 54 51 47;
+  --line: 60 57 52;
+  --fg: 246 244 240;
+  --muted: 165 160 152;
+  --accent: 30 215 96;
+  --accent2: 25 170 110;
+  --onaccent: 6 22 12;
+  --danger: 244 90 80;
+  color-scheme: dark;
+}
+
+/* ---------- Hauteurs fixes (lecteur + navigation mobile) ---------- */
+:root {
+  --player-h: 88px;
+  --player-gap: 0px;
+  --mnav-h: 0px;
+  --sidebar-w: 17rem;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 767px) {
+  :root {
+    /* Mini-lecteur flottant (carte arrondie) au-dessus de la barre de navigation */
+    --player-h: 64px;
+    --player-gap: 8px;
+    --mnav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---------- Densité ---------- */
+:root,
+[data-density='comfortable'] {
+  --row-pad: 0.6rem;
+  --card-gap: 1.25rem;
+  --page-pad: 2rem;
+  --section-gap: 3rem;
+}
+[data-density='compact'] {
+  --row-pad: 0.28rem;
+  --card-gap: 0.75rem;
+  --page-pad: 1.25rem;
+  --section-gap: 1.9rem;
+}
+
+/* ---------- Style des pochettes ---------- */
+:root,
+[data-cover='rounded'] {
+  --cover-radius: 14px;
+  --cover-shadow: 0 14px 30px -14px rgb(0 0 0 / 0.65);
+}
+[data-cover='square'] {
+  --cover-radius: 2px;
+  --cover-shadow: 0 2px 0 0 rgb(0 0 0 / 0.35), 0 12px 24px -12px rgb(0 0 0 / 0.7), inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* ============================================================ */
+
+html {
+  background: rgb(var(--bg));
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.4);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--hover)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--hover));
+  border-radius: 999px;
+  border: 2px solid rgb(var(--bg));
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+/* Halo d'ambiance fixe derrière toute l'interface */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 12% -8%, rgb(var(--accent) / 0.16), transparent 60%),
+    radial-gradient(800px 480px at 100% 10%, rgb(var(--accent2) / 0.09), transparent 60%);
+}
+
+/* Verre dépoli */
+.glass {
+  background: rgb(var(--surface) / 0.72);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+
+.cover-shadow {
+  box-shadow: var(--cover-shadow);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, rgb(var(--accent)), rgb(var(--accent2)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-accent-gradient {
+  background: linear-gradient(115deg, rgb(var(--accent)), rgb(var(--accent2)));
+}
+
+/* Squelette de chargement */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--card));
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--hover) / 0.55), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+/* ---------- Curseurs (barre de progression / volume) ---------- */
+input[type='range'].range {
+  --p: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+input[type='range'].range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, rgb(var(--fg)) var(--p), rgb(var(--hover)) var(--p));
+}
+input[type='range'].range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--hover));
+}
+input[type='range'].range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+}
+input[type='range'].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+  box-shadow: 0 0 0 4px rgb(var(--accent) / 0);
+  transform: scale(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type='range'].range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+.range-wrap:hover input[type='range'].range::-webkit-slider-thumb,
+input[type='range'].range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1);
+  box-shadow: 0 0 0 4px rgb(var(--accent) / 0.25);
+}
+.range-wrap:hover input[type='range'].range::-moz-range-thumb {
+  transform: scale(1);
+}
+.range-wrap:hover input[type='range'].range::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, rgb(var(--accent)) var(--p), rgb(var(--hover)) var(--p));
+}
+.range-wrap:hover input[type='range'].range::-moz-range-progress {
+  background: rgb(var(--accent));
+}
+
+/* ---------- Champs de formulaire ---------- */
+.field {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgb(var(--line));
+  background: rgb(var(--surface));
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  color: rgb(var(--fg));
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.field::placeholder {
+  color: rgb(var(--muted) / 0.7);
+}
+.field:focus {
+  border-color: rgb(var(--accent));
+  box-shadow: 0 0 0 3px rgb(var(--accent) / 0.22);
+}
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  padding-right: 2.2rem;
+}
+select.field option {
+  background: rgb(var(--surface));
+  color: rgb(var(--fg));
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--muted));
+}
+
+/* Boutons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: linear-gradient(115deg, rgb(var(--accent)), rgb(var(--accent2)));
+  color: rgb(var(--onaccent));
+  box-shadow: 0 8px 24px -10px rgb(var(--accent) / 0.8);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 10px 30px -8px rgb(var(--accent) / 0.95);
+  filter: brightness(1.08);
+}
+.btn-ghost {
+  background: rgb(var(--card));
+  color: rgb(var(--fg));
+  border-color: rgb(var(--line));
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgb(var(--hover));
+}
+.btn-danger {
+  background: rgb(var(--danger));
+  color: white;
+}
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: rgb(var(--muted));
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+.icon-btn:hover {
+  color: rgb(var(--fg));
+}
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* Focus clavier visible */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+/* Texte multi-lignes tronqué */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animation du cœur */
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.45);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.heart-pop {
+  animation: heart-pop 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+ * Confort tactile / comportement "application" sur mobile
+ * ============================================================ */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+a,
+[role='button'],
+summary,
+label {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  /* Pas de rebond ni de rafraîchissement par tirage : l'appli reste stable */
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  /* iOS zoome sur les champs dont le texte fait moins de 16 px : on l'évite */
+  input,
+  select,
+  textarea,
+  .field {
+    font-size: 16px !important;
+  }
+
+  /* Barres de défilement discrètes */
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  /* Pas de sélection de texte accidentelle sur les éléments d'interface */
+  button,
+  nav,
+  [role='button'] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Zones de toucher confortables */
+  .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Appareils sans survol (téléphones, tablettes) : les boutons cachés "au survol" sont toujours visibles */
+@media (hover: none) {
+  .touch-visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .icon-btn:hover {
+    color: rgb(var(--muted));
+  }
+}
+
+/* Retour tactile : léger enfoncement au toucher */
+.press {
+  transition: transform 0.12s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Barre de progression du lecteur plein écran : grande zone tactile, poignée toujours visible */
+input[type='range'].range-touch {
+  --p: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  background: transparent;
+  outline: none;
+  touch-action: none;
+}
+input[type='range'].range-touch::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, rgb(var(--fg)) var(--p), rgb(255 255 255 / 0.22) var(--p));
+}
+input[type='range'].range-touch::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.22);
+}
+input[type='range'].range-touch::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+}
+input[type='range'].range-touch::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
+}
+input[type='range'].range-touch::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+}
+
+/* Hauteur d'écran fiable sur mobile (la barre d'adresse peut se replier) */
+.h-screen-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
