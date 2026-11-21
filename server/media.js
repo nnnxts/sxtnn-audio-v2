@@ -2,6 +2,9 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { UPLOADS_DIR } from './config.js';
+import db from './db.js';
+import { verifyToken } from './auth.js';
+import { canSeeRelease } from './visibility.js';
 
 const router = express.Router();
 
@@ -37,7 +40,10 @@ function streamWithRange(subdir, types, notFoundMessage) {
       const size = stat.size;
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader(
+        'Cache-Control',
+        res.locals.privateMedia ? 'private, max-age=3600' : 'public, max-age=31536000, immutable'
+      );
       res.setHeader('Last-Modified', stat.mtime.toUTCString());
 
       const range = req.headers.range;
@@ -89,8 +95,40 @@ function streamWithRange(subdir, types, notFoundMessage) {
   };
 }
 
-router.get('/audio/:filename', streamWithRange('audio', AUDIO_TYPES, 'Fichier audio introuvable.'));
-router.get('/canvas/:filename', streamWithRange('canvas', CANVAS_TYPES, 'Canvas introuvable.'));
+/**
+ * Protection des sorties « amis uniquement » : un fichier audio/canvas lié à une sortie privée
+ * n'est envoyé qu'avec un jeton valide (?t=…) ET si le compte est bien ami de l'artiste (ou l'artiste lui-même).
+ * Les fichiers publics ne coûtent qu'une recherche indexée.
+ */
+const OWNERS_SQL = `
+  SELECT COALESCE(r.visibility, 'public') AS visibility, r.primary_artist_id
+    FROM tracks t JOIN releases r ON r.id = t.release_id WHERE t.audio_url = @u
+  UNION ALL
+  SELECT COALESCE(r.visibility, 'public'), r.primary_artist_id
+    FROM tracks t JOIN releases r ON r.id = t.release_id WHERE t.canvas_url = @u
+  UNION ALL
+  SELECT COALESCE(r.visibility, 'public'), r.primary_artist_id FROM releases r WHERE r.canvas_url = @u`;
+let ownersStmt;
+
+function guardPrivate(subdir) {
+  return (req, res, next) => {
+    ownersStmt = ownersStmt || db.prepare(OWNERS_SQL);
+    const url = `/media/${subdir}/${path.basename(req.params.filename)}`;
+    const owners = ownersStmt.all({ u: url });
+    if (!owners.length || owners.some((o) => o.visibility === 'public')) return next();
+
+    const payload = verifyToken(String(req.query.t || ''), 'media');
+    const viewer = payload ? (payload.k === 'a' ? { artistId: payload.id } : { userId: payload.id }) : null;
+    if (viewer && owners.some((o) => canSeeRelease(viewer, o))) {
+      res.locals.privateMedia = true;
+      return next();
+    }
+    res.status(404).json({ error: 'Fichier introuvable.' });
+  };
+}
+
+router.get('/audio/:filename', guardPrivate('audio'), streamWithRange('audio', AUDIO_TYPES, 'Fichier audio introuvable.'));
+router.get('/canvas/:filename', guardPrivate('canvas'), streamWithRange('canvas', CANVAS_TYPES, 'Canvas introuvable.'));
 
 // Images : noms de fichiers aléatoires -> cache agressif sans risque
 for (const sub of ['covers', 'avatars', 'banners']) {

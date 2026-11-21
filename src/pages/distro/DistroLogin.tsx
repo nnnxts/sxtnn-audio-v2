@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Loader2, Mic } from 'lucide-react';
-import { api, tokens } from '../../lib/api';
+import { ArrowLeft, ArrowRight, KeyRound, Loader2, Mic } from 'lucide-react';
+import { accessCode, api, tokens } from '../../lib/api';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { Artist } from '../../lib/types';
 import { useToast } from '../../context/ToastContext';
@@ -37,6 +37,10 @@ export default function DistroLogin() {
   const navigate = useNavigate();
   const { success, error: toastError } = useToast();
   const [name, setName] = useState('');
+  // Étape 1 : code d'accès (si le serveur en exige un) — étape 2 : nom d'artiste
+  const [needCode, setNeedCode] = useState<boolean | null>(null);
+  const [code, setCode] = useState('');
+  const [codeOk, setCodeOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [existing, setExisting] = useState<Artist | null>(null);
@@ -54,6 +58,40 @@ export default function DistroLogin() {
     };
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    api
+      .get<{ code_required: boolean }>('/distro/access')
+      .then((res) => {
+        if (!alive) return;
+        setNeedCode(res.code_required);
+        if (!res.code_required) setCodeOk(true);
+      })
+      .catch(() => alive && setNeedCode(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) {
+      setError('Entrez le code d\'accès.');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      await api.post('/distro/check-code', { code: code.trim() });
+      accessCode.set(code.trim());
+      setCodeOk(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = name.trim();
@@ -64,13 +102,21 @@ export default function DistroLogin() {
     setError(null);
     setBusy(true);
     try {
-      const res = await api.post<{ token: string; artist: Artist; created: boolean }>('/distro/login', { name: value });
+      const res = await api.post<{ token: string; artist: Artist; created: boolean }>('/distro/login', {
+        name: value,
+        code: accessCode.get(),
+      });
       tokens.setArtist(res.token);
       success(res.created ? `Profil artiste « ${res.artist.name} » créé !` : `Bienvenue, ${res.artist.name} !`);
       navigate('/distro/dashboard');
     } catch (err) {
       setError((err as Error).message);
       toastError((err as Error).message);
+      if ((err as { status?: number }).status === 403) {
+        accessCode.set(null);
+        setCodeOk(false);
+        setCode('');
+      }
     } finally {
       setBusy(false);
     }
@@ -106,7 +152,8 @@ export default function DistroLogin() {
           </div>
 
           <p className="mt-6 text-[15px] leading-relaxed text-fg/80">
-            Publiez vos sorties, gérez votre catalogue et votre profil. Un seul champ suffit : votre nom d'artiste.
+            Publiez vos sorties, gérez votre catalogue et votre profil.{' '}
+            {needCode ? 'Entrez le code d\'accès, puis votre nom d\'artiste.' : 'Un seul champ suffit : votre nom d\'artiste.'}
           </p>
 
           {existing && (
@@ -122,29 +169,62 @@ export default function DistroLogin() {
             </motion.div>
           )}
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            <div>
-              <label htmlFor="artist-name" className="label">
-                Entrez votre nom d'artiste
-              </label>
-              <input
-                id="artist-name"
-                className="field !py-3.5 text-base"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex : sxtnn"
-                maxLength={60}
-                autoFocus
-                autoComplete="off"
-              />
-              <p className="mt-2 text-xs text-muted">Nouveau nom ? Votre profil artiste est créé automatiquement.</p>
+          {needCode === null ? (
+            <div className="mt-8 grid place-items-center py-6 text-muted">
+              <Loader2 className="animate-spin" size={22} />
             </div>
-            {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
-            <button className="btn btn-primary w-full !py-3.5 text-[15px]" disabled={busy || !name.trim()}>
-              {busy ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
-              Accéder au studio
-            </button>
-          </form>
+          ) : !codeOk ? (
+            <form onSubmit={submitCode} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="access-code" className="label">
+                  Code d'accès artiste
+                </label>
+                <div className="relative">
+                  <KeyRound size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    id="access-code"
+                    type="password"
+                    className="field !py-3.5 !pl-11 text-base"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="Votre code"
+                    autoFocus
+                    autoComplete="current-password"
+                  />
+                </div>
+                <p className="mt-2 text-xs text-muted">Le même code que pour les sauvegardes. Il évite que n'importe qui crée un profil artiste.</p>
+              </div>
+              {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
+              <button className="btn btn-primary w-full !py-3.5 text-[15px]" disabled={busy || !code.trim()}>
+                {busy ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                Continuer
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submit} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="artist-name" className="label">
+                  Entrez votre nom d'artiste
+                </label>
+                <input
+                  id="artist-name"
+                  className="field !py-3.5 text-base"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex : sxtnn"
+                  maxLength={60}
+                  autoFocus
+                  autoComplete="off"
+                />
+                <p className="mt-2 text-xs text-muted">Nouveau nom ? Votre profil artiste est créé automatiquement.</p>
+              </div>
+              {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
+              <button className="btn btn-primary w-full !py-3.5 text-[15px]" disabled={busy || !name.trim()}>
+                {busy ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                Accéder au studio
+              </button>
+            </form>
+          )}
         </motion.div>
       </div>
     </div>

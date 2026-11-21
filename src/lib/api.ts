@@ -25,6 +25,25 @@ function write(key: string, value: string | null) {
   }
 }
 
+/** Code d'accès artiste, gardé uniquement le temps de la session du navigateur (sert à préremplir backup/restauration). */
+export const accessCode = {
+  get: () => {
+    try {
+      return sessionStorage.getItem('sxtnn.adminCode') || '';
+    } catch {
+      return '';
+    }
+  },
+  set: (code: string | null) => {
+    try {
+      if (code) sessionStorage.setItem('sxtnn.adminCode', code);
+      else sessionStorage.removeItem('sxtnn.adminCode');
+    } catch {
+      /* stockage indisponible */
+    }
+  },
+};
+
 export const tokens = {
   getUser: () => read(USER_KEY),
   setUser: (t: string | null) => write(USER_KEY, t),
@@ -63,6 +82,9 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   const { method = 'GET', body, signal } = opts;
   const auth: AuthKind = opts.auth ?? (path.startsWith('/distro') ? 'artist' : 'user');
   const headers: Record<string, string> = { ...authHeader(auth) };
+  // Un artiste connecté voit aussi ses propres sorties « amis uniquement » sur le site public
+  const artistToken = tokens.getArtist();
+  if (artistToken && auth !== 'artist') headers['X-Artist-Token'] = artistToken;
   let payload: BodyInit | undefined;
 
   if (body instanceof FormData) {

@@ -20,7 +20,7 @@ import { TMP_DIR, UPLOADS_DIR, UPLOAD_SUBDIRS } from './config.js';
 
 export class RestoreError extends Error {}
 
-const LIVE_TABLES = ['users', 'artists', 'releases', 'tracks', 'track_artists', 'playlists', 'playlist_tracks', 'likes', 'follows', 'listens'];
+const LIVE_TABLES = ['users', 'artists', 'releases', 'tracks', 'track_artists', 'playlists', 'playlist_tracks', 'likes', 'follows', 'listens', 'friendships', 'friend_invites'];
 const REQUIRED_TABLES = ['artists', 'releases', 'tracks'];
 
 let restoring = false;

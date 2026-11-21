@@ -1,0 +1,389 @@
+/* ============================================================
+ * DÉCORS ANIMÉS (chargé après themes.css)
+ * Tout est animé en transform / opacity uniquement (GPU, pas de recalcul de page).
+ * Le réglage « Animations du fond » (data-fx="0") coupe tout. Sur les pages
+ * SXTNN DISTRO (data-force-theme) rien n'est affiché.
+ * ============================================================ */
+
+.tdecor {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint style;
+}
+.tdecor i,
+.tdecor b,
+.tdecor svg,
+.tdecor div {
+  position: absolute;
+  display: block;
+}
+html[data-theme='aero'] .tdecor-aero,
+html[data-theme='metro'] .tdecor-metro,
+html[data-theme='vaporwave'] .tdecor-vapor,
+html[data-theme='retromac'] .tdecor-retromac {
+  display: block;
+}
+html[data-fx='0'] .tdecor,
+html[data-force-theme] .tdecor {
+  display: none !important;
+}
+
+/* ---------------- Frutiger Aero : nuages, bulles, herbe qui ondule ---------------- */
+
+.ae-cloud {
+  top: 0;
+  left: 0;
+  width: 46vmax;
+  height: 16vmax;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.4) 55%, transparent 100%);
+  opacity: 0.55;
+  animation: ae-drift 90s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.ae-c1 { top: 4%; left: -8%; }
+.ae-c2 { top: 22%; left: 52%; width: 38vmax; height: 12vmax; opacity: 0.42; animation-duration: 120s; animation-direction: alternate-reverse; }
+.ae-c3 { top: 46%; left: 14%; width: 30vmax; height: 10vmax; opacity: 0.3; animation-duration: 150s; }
+@keyframes ae-drift {
+  from { transform: translate3d(-6vw, 0, 0); }
+  to { transform: translate3d(12vw, 0, 0); }
+}
+
+.ae-bub {
+  bottom: -140px;
+  border-radius: 50%;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 30% 26%, rgb(255 255 255 / 0.95) 0 7%, rgb(255 255 255 / 0.4) 16%, transparent 34%),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.05) 0 58%, rgb(255 255 255 / 0.28) 74%, rgb(255 255 255 / 0.72) 80%, rgb(255 255 255 / 0.06) 84%, transparent 85%),
+    radial-gradient(circle at 72% 80%, rgb(120 235 255 / 0.38), transparent 42%);
+  animation: ae-rise linear infinite;
+  will-change: transform, opacity;
+}
+@keyframes ae-rise {
+  0% { transform: translate3d(0, 0, 0) scale(0.85); opacity: 0; }
+  8% { opacity: 0.9; }
+  50% { transform: translate3d(var(--dx, 0px), -62vh, 0) scale(1); }
+  88% { opacity: 0.85; }
+  100% { transform: translate3d(calc(var(--dx, 0px) * -0.6), -122vh, 0) scale(1.06); opacity: 0; }
+}
+
+.ae-grass {
+  left: -2%;
+  width: 104%;
+  bottom: -2px;
+  height: 28vh;
+  min-height: 150px;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+.ae-back { height: 32vh; opacity: 0.85; filter: blur(3px); animation: ae-sway-a 7s ease-in-out infinite alternate; }
+.ae-front { opacity: 0.95; filter: blur(1.2px); animation: ae-sway-b 5.2s ease-in-out infinite alternate; }
+@keyframes ae-sway-a { from { transform: skewX(-1.6deg); } to { transform: skewX(1.6deg); } }
+@keyframes ae-sway-b { from { transform: skewX(1.3deg) scaleY(1); } to { transform: skewX(-1.3deg) scaleY(1.025); } }
+
+/* ---------------- Frutiger Metro (Y2K) : couleurs qui glissent, haut-parleurs, étincelles ---------------- */
+
+/* Trois voiles de couleur (rose, violet/bleu, vert acide) qui se fondent l'un dans l'autre */
+.mt-field { inset: 0; opacity: 0; animation: mt-cycle 36s linear infinite; will-change: opacity; }
+.mt-f1 {
+  opacity: 1;
+  animation-delay: -5s;
+  background:
+    radial-gradient(75vmax 60vmax at 82% 8%, rgb(255 61 170 / 0.62), transparent 66%),
+    radial-gradient(60vmax 50vmax at 6% 96%, rgb(186 20 120 / 0.55), transparent 66%);
+}
+.mt-f2 {
+  animation-delay: -17s;
+  background:
+    radial-gradient(75vmax 60vmax at 18% 12%, rgb(150 70 255 / 0.6), transparent 66%),
+    radial-gradient(60vmax 50vmax at 92% 92%, rgb(40 90 255 / 0.55), transparent 66%);
+}
+.mt-f3 {
+  animation-delay: -29s;
+  background:
+    radial-gradient(75vmax 60vmax at 88% 92%, rgb(150 255 50 / 0.46), transparent 66%),
+    radial-gradient(60vmax 50vmax at 4% 8%, rgb(40 150 20 / 0.5), transparent 66%);
+}
+@keyframes mt-cycle {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  33% { opacity: 1; }
+  48% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Trame de points (demi-teinte) en bas */
+.mt-dots {
+  inset: 0;
+  background: radial-gradient(circle, rgb(0 0 0 / 0.6) 1.3px, transparent 1.9px) 0 0 / 9px 9px;
+  -webkit-mask-image: linear-gradient(to top, #000 0, transparent 48%);
+  mask-image: linear-gradient(to top, #000 0, transparent 48%);
+  opacity: 0.55;
+}
+
+.mt-splat {
+  right: -10vmin;
+  top: 14vh;
+  width: min(80vmin, 780px);
+  height: min(80vmin, 780px);
+  animation: mt-breathe 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.mt-art {
+  animation: mt-breathe 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.mt-art-a { right: -15vmin; top: -17vmin; width: min(66vmin, 640px); height: min(66vmin, 640px); }
+.mt-art-b { left: -13vmin; bottom: 9vh; width: min(50vmin, 500px); height: min(50vmin, 500px); animation-delay: -7s; animation-duration: 21s; }
+@keyframes mt-breathe {
+  from { transform: translate3d(0, 0, 0) scale(1) rotate(-2deg); }
+  to { transform: translate3d(0, -1.8vmin, 0) scale(1.05) rotate(2.5deg); }
+}
+
+.mt-city { left: 0; bottom: 0; width: 100%; height: 30vh; }
+
+.mt-star { animation: mt-float 11s ease-in-out infinite alternate; will-change: transform; }
+.mt-s1 { left: 7%; top: 12%; width: 13vmin; height: 13vmin; }
+.mt-s2 { left: 44%; top: 6%; width: 8vmin; height: 8vmin; animation-delay: -4s; animation-duration: 9s; }
+.mt-s3 { right: 10%; bottom: 24%; width: 11vmin; height: 11vmin; animation-delay: -7s; animation-duration: 14s; }
+@keyframes mt-float {
+  from { transform: translate3d(0, 0, 0) rotate(-8deg); }
+  to { transform: translate3d(0, -2.4vmin, 0) rotate(10deg); }
+}
+
+/* Haut-parleurs : --k (0 → 1) est posé par le composant, il monte et retombe en douceur */
+.mt-spk {
+  bottom: calc(var(--player-h, 96px) + 14px);
+  width: clamp(120px, 15vmin, 190px);
+  aspect-ratio: 5 / 8;
+  transform-origin: 50% 100%;
+  transform: scale(calc(1 + var(--k, 0) * 0.03));
+  will-change: transform;
+}
+.mt-spk-l { left: calc(var(--sidebar-w, 0px) + 24px); }
+.mt-spk-r { right: 20px; }
+@media (max-width: 767px) {
+  .mt-spk-l { left: 14px; }
+  .mt-spk { width: clamp(86px, 22vw, 130px); }
+}
+.mt-halo {
+  inset: -24%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 90 190 / 0.6), rgb(255 90 190 / 0.18) 55%, transparent 100%);
+  opacity: calc(0.1 + var(--k, 0) * 0.9);
+  will-change: opacity;
+}
+.mt-box {
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(155deg, #3a2c4d 0%, #150d20 45%, #07040c 100%);
+  box-shadow: inset 0 0 0 2px #000, inset 0 3px 0 rgb(255 255 255 / 0.16), 0 22px 44px -14px rgb(0 0 0 / 0.8);
+}
+.mt-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgb(255 255 255 / 0.18), transparent 34%);
+}
+.mt-tweeter {
+  top: 8%;
+  left: 50%;
+  width: 30%;
+  aspect-ratio: 1;
+  margin-left: -15%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #d9d2e6 0 8%, #5b4d70 30%, #130c1e 70%);
+  box-shadow: 0 0 0 3px #000, 0 0 0 5px #4a3c60;
+}
+.mt-woofer {
+  bottom: 7%;
+  left: 50%;
+  width: 82%;
+  aspect-ratio: 1;
+  margin-left: -41%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0c0714 0 34%, #000 35% 38%, #43365a 39% 54%, #0a0612 55% 60%, #2b2140 61% 100%);
+  box-shadow: 0 0 0 3px #000, inset 0 0 0 3px #5b4d70;
+}
+.mt-cone {
+  inset: 17%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #8a76a8, #2a1f3d 52%, #0a0612 100%);
+  transform: scale(calc(1 + var(--k, 0) * 0.15));
+  will-change: transform;
+}
+.mt-cap {
+  inset: 38%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fff, #b9aacb 40%, #3b2f50 100%);
+  transform: scale(calc(1 + var(--k, 0) * 0.3));
+  will-change: transform;
+}
+
+/* Étoiles et particules : elles n'apparaissent que pendant la lecture, et s'effacent en douceur */
+.mt-sparks { inset: 0; opacity: 0; transition: opacity 1.4s ease; }
+.tdecor-metro[data-playing='1'] .mt-sparks { opacity: 1; }
+.mt-spark {
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: mt-twinkle ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.mt-sp-w { background: #fff; }
+.mt-sp-p { background: #ff5cc0; }
+.mt-sp-l { background: #b8ff55; }
+.mt-sp-v { background: #b48cff; }
+@keyframes mt-twinkle {
+  0% { opacity: 0; transform: translate3d(0, 6px, 0) scale(0.3) rotate(0deg); }
+  25% { opacity: 1; }
+  60% { opacity: 0.9; transform: translate3d(0, -22px, 0) scale(1) rotate(60deg); }
+  100% { opacity: 0; transform: translate3d(0, -46px, 0) scale(0.3) rotate(120deg); }
+}
+
+/* ---------------- Vaporwave : grille qui défile, soleil qui pulse ---------------- */
+
+html[data-theme='vaporwave']:not([data-fx='0'])::before {
+  background:
+    radial-gradient(circle at 50% 70%, rgb(255 211 110 / 0.55) 0 8%, rgb(255 95 162 / 0.45) 8.3% 15%, transparent 15.5%),
+    linear-gradient(180deg, #14082c 0%, #3a1366 62%, #1b0b3a 100%);
+}
+.vp-sun {
+  left: 50%;
+  top: 70%;
+  width: 64vmin;
+  height: 64vmin;
+  margin: -32vmin 0 0 -32vmin;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 95 162 / 0.5), rgb(255 211 110 / 0.18) 52%, transparent 74%);
+  animation: vp-pulse 7s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+@keyframes vp-pulse {
+  from { transform: scale(0.94); opacity: 0.7; }
+  to { transform: scale(1.06); opacity: 1; }
+}
+.vp-floor {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  overflow: hidden;
+  perspective: 500px;
+  perspective-origin: 50% 0%;
+  -webkit-mask-image: linear-gradient(to top, #000 55%, transparent);
+  mask-image: linear-gradient(to top, #000 55%, transparent);
+}
+.vp-grid {
+  left: -120%;
+  right: -120%;
+  top: 0;
+  height: 320%;
+  transform-origin: 50% 0;
+  transform: rotateX(75deg);
+  background:
+    repeating-linear-gradient(90deg, rgb(255 113 206 / 0.55) 0 2px, transparent 2px 80px),
+    repeating-linear-gradient(0deg, rgb(1 205 254 / 0.5) 0 2px, transparent 2px 36px);
+  animation: vp-scroll 1.6s linear infinite;
+  will-change: transform;
+}
+@keyframes vp-scroll {
+  from { transform: rotateX(75deg) translateY(0); }
+  to { transform: rotateX(75deg) translateY(36px); }
+}
+.vp-shape { opacity: 0.7; will-change: transform; }
+.vp-tri {
+  left: 12%; top: 18%; width: 9vmin; height: 8vmin;
+  background: linear-gradient(135deg, rgb(255 211 110 / 0.85), rgb(255 95 162 / 0.85));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  animation: vp-bob 9s ease-in-out infinite alternate;
+}
+.vp-ring {
+  right: 14%; top: 24%; width: 8vmin; height: 8vmin; border-radius: 50%;
+  border: 3px solid rgb(1 205 254 / 0.85);
+  animation: vp-bob 11s -3s ease-in-out infinite alternate;
+}
+.vp-sq {
+  right: 30%; top: 12%; width: 6vmin; height: 6vmin;
+  background: linear-gradient(135deg, rgb(120 200 255 / 0.85), rgb(190 120 255 / 0.85));
+  animation: vp-spin 26s linear infinite;
+}
+@keyframes vp-bob {
+  from { transform: translate3d(0, -1.6vmin, 0) rotate(-6deg); }
+  to { transform: translate3d(0, 1.6vmin, 0) rotate(8deg); }
+}
+@keyframes vp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------- Mac rétro 80s : soleil rayé, sol en damier, formes flottantes ---------------- */
+
+.rm-sun {
+  left: 50%;
+  bottom: calc(34vh - 11vmin);
+  width: 46vmin;
+  height: 46vmin;
+  margin-left: -23vmin;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff27a 0%, #ffb05a 46%, #ff5fa0 100%);
+  box-shadow: 0 0 70px 6px rgb(255 120 170 / 0.45);
+  -webkit-mask-image: linear-gradient(#000 0 56%, transparent 56% 61%, #000 61% 67%, transparent 67% 73%, #000 73% 81%, transparent 81% 89%, #000 89%);
+  mask-image: linear-gradient(#000 0 56%, transparent 56% 61%, #000 61% 67%, transparent 67% 73%, #000 73% 81%, transparent 81% 89%, #000 89%);
+  animation: rm-glow 8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes rm-glow {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(0, -0.8vmin, 0) scale(1.03); }
+}
+.rm-floor {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  overflow: hidden;
+  perspective: 300px;
+  perspective-origin: 50% 0%;
+  background: #2a0f3a;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16%);
+}
+.rm-checker {
+  left: -150%;
+  right: -150%;
+  top: 0;
+  height: 340%;
+  transform-origin: 50% 0;
+  transform: rotateX(68deg);
+  background: conic-gradient(#ff7ab8 25%, #2a0f3a 0 50%, #ff7ab8 0 75%, #2a0f3a 0) 0 0 / 140px 140px;
+  animation: rm-scroll 6s linear infinite;
+  will-change: transform;
+}
+@keyframes rm-scroll {
+  from { transform: rotateX(68deg) translateY(0); }
+  to { transform: rotateX(68deg) translateY(140px); }
+}
+.rm-shape { opacity: 0.85; will-change: transform; }
+.rm-tri {
+  left: 9%; top: 16%; width: 9vmin; height: 8vmin;
+  background: linear-gradient(135deg, #3ee6d0, #2aa3ff);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  animation: vp-bob 10s ease-in-out infinite alternate;
+}
+.rm-diamond {
+  right: 12%; top: 14%; width: 7vmin; height: 7vmin;
+  background: linear-gradient(135deg, #fff27a, #ff8fc4);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  animation: vp-bob 12s -4s ease-in-out infinite alternate;
+}
+.rm-ring {
+  right: 28%; top: 30%; width: 6vmin; height: 6vmin; border-radius: 50%;
+  border: 3px solid #2a0f3a;
+  animation: vp-bob 8s -2s ease-in-out infinite alternate;
+}

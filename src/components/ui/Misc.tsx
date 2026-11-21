@@ -6,17 +6,11 @@ import { formatCount } from '../../lib/format';
 /* ------------------------------ Equalizer ------------------------------ */
 
 export function Equalizer({ playing = true, className = '' }: { playing?: boolean; className?: string }) {
+  // 4 barres qui montent et descendent à des rythmes différents (style Spotify / Deezer)
   return (
-    <span className={`inline-flex h-4 items-end gap-[2px] text-accent ${className}`} aria-hidden>
-      {[0, 0.25, 0.1, 0.35].map((delay, i) => (
-        <span
-          key={i}
-          className="h-full w-[3px] origin-bottom rounded-full bg-current"
-          style={{
-            animation: playing ? `eq 0.9s ease-in-out ${delay}s infinite` : 'none',
-            transform: playing ? undefined : 'scaleY(0.3)',
-          }}
-        />
+    <span className={`eq inline-flex h-4 items-end gap-[2px] text-accent ${className}`} aria-hidden>
+      {[1, 2, 3, 4].map((n) => (
+        <span key={n} className={`eq-bar eq-b${n} ${playing ? 'eq-live' : ''}`} />
       ))}
     </span>
   );
@@ -105,11 +99,12 @@ export function Scroller({ children, className = '' }: { children: ReactNode; cl
   };
 
   return (
-    <div className={`group/scroller relative -mx-2 ${className}`}>
+    // Marges négatives + rembourrage : la liste défile sans rogner le halo, l'anneau ni le survol des pastilles
+    <div className={`group/scroller relative -mx-4 -mb-3 -mt-4 ${className}`}>
       <div
         ref={ref}
         onScroll={update}
-        className="flex snap-x snap-proximity gap-[var(--card-gap)] overflow-x-auto px-2 pb-3 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-proximity gap-[var(--card-gap)] overflow-x-auto px-4 pb-6 pt-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </div>

@@ -12,38 +12,49 @@ import {
   artistTotalPlays,
 } from '../queries.js';
 import { escapeLike } from '../utils.js';
+import { canSeeRelease, viewerOf, visSql } from '../visibility.js';
 
 const router = express.Router();
 
-const topTracksSql = (limit) =>
-  `${TRACK_SELECT} ORDER BY t.play_count DESC, t.id ASC LIMIT ${Number(limit) || 10}`;
+const topTracksSql = (limit, v) =>
+  `${TRACK_SELECT} WHERE ${visSql(v)} ORDER BY t.play_count DESC, t.id ASC LIMIT ${Number(limit) || 10}`;
+
+/** Écoutes cumulées d'un artiste (alias `a`), uniquement sur ce que le spectateur peut voir. */
+const playsOf = (v) =>
+  `(SELECT COALESCE(SUM(t.play_count), 0) FROM tracks t
+      JOIN track_artists ta ON ta.track_id = t.id
+      JOIN releases r ON r.id = t.release_id
+    WHERE ta.artist_id = a.id AND ${visSql(v)})`;
+
+const hasVisibleTrack = (v) =>
+  `EXISTS (SELECT 1 FROM track_artists ta JOIN tracks t ON t.id = ta.track_id JOIN releases r ON r.id = t.release_id
+           WHERE ta.artist_id = a.id AND ${visSql(v)})`;
 
 /* ------------------------------ Accueil ------------------------------ */
 
-router.get('/home', (_req, res) => {
-  // Sortie à la une : parmi les 8 sorties récentes (hors leaks), celle qui est la plus écoutée
-  const candidates = hydrateReleases(
+router.get('/home', (req, res) => {
+  const v = viewerOf(req);
+
+  // Sortie à la une : la dernière sortie publique (hors leaks) ajoutée OU modifiée
+  // (nouvel upload, titre ajouté, informations changées...).
+  const [featured = null] = hydrateReleases(
     db
       .prepare(
-        `${RELEASE_SELECT} WHERE r.is_leak = 0 AND EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id) ${RELEASE_ORDER} LIMIT 8`
+        `${RELEASE_SELECT}
+         WHERE r.is_leak = 0 AND COALESCE(r.visibility, 'public') = 'public'
+           AND EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id)
+         ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.id DESC LIMIT 1`
       )
       .all()
   );
-  // En cas d'égalité d'écoutes, la plus récente (premier de la liste) l'emporte
-  let featured = null;
-  for (const c of candidates) {
-    if (!featured || c.play_count > featured.play_count) featured = c;
-  }
 
-  const topTracks = hydrateTracks(db.prepare(topTracksSql(10)).all());
+  const topTracks = hydrateTracks(db.prepare(topTracksSql(10, v)).all(), v);
 
   const artistRows = db
     .prepare(
-      `SELECT a.*,
-              (SELECT COALESCE(SUM(t.play_count), 0) FROM tracks t
-                 JOIN track_artists ta ON ta.track_id = t.id WHERE ta.artist_id = a.id) AS total_plays
+      `SELECT a.*, ${playsOf(v)} AS total_plays
        FROM artists a
-       WHERE EXISTS (SELECT 1 FROM track_artists ta WHERE ta.artist_id = a.id)
+       WHERE ${hasVisibleTrack(v)}
        ORDER BY total_plays DESC, a.name COLLATE NOCASE ASC`
     )
     .all();
@@ -52,17 +63,19 @@ router.get('/home', (_req, res) => {
   const latest = hydrateReleases(
     db
       .prepare(
-        `${RELEASE_SELECT} WHERE EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id) ${RELEASE_ORDER} LIMIT 32`
+        `${RELEASE_SELECT} WHERE ${visSql(v)} AND EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id) ${RELEASE_ORDER} LIMIT 32`
       )
-      .all()
+      .all(),
+    v
   );
 
   res.json({ featured, topTracks, artists, latest });
 });
 
 router.get('/top-tracks', (req, res) => {
+  const v = viewerOf(req);
   const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
-  res.json({ tracks: hydrateTracks(db.prepare(topTracksSql(limit)).all()) });
+  res.json({ tracks: hydrateTracks(db.prepare(topTracksSql(limit, v)).all(), v) });
 });
 
 router.get('/genres', (_req, res) => {
@@ -72,15 +85,16 @@ router.get('/genres', (_req, res) => {
 /* ------------------------------ Explorer ------------------------------ */
 
 router.get('/explore', (req, res) => {
+  const v = viewerOf(req);
   const kind = String(req.query.kind || 'all');
   const genre = String(req.query.genre || '').trim();
 
   const genres = db
     .prepare(
       `SELECT genre, COUNT(*) AS count FROM (
-         SELECT primary_genre AS genre FROM releases
+         SELECT r.primary_genre AS genre FROM releases r WHERE ${visSql(v)}
          UNION ALL
-         SELECT secondary_genre AS genre FROM releases WHERE secondary_genre IS NOT NULL AND secondary_genre <> ''
+         SELECT r.secondary_genre AS genre FROM releases r WHERE r.secondary_genre IS NOT NULL AND r.secondary_genre <> '' AND ${visSql(v)}
        ) WHERE genre IS NOT NULL AND genre <> '' GROUP BY genre ORDER BY count DESC, genre ASC`
     )
     .all();
@@ -92,16 +106,18 @@ router.get('/explore', (req, res) => {
     out.releases = hydrateReleases(
       db
         .prepare(
-          `${RELEASE_SELECT} WHERE (r.primary_genre = ? OR r.secondary_genre = ?) AND ${existsTracks} ${RELEASE_ORDER}`
+          `${RELEASE_SELECT} WHERE (r.primary_genre = ? OR r.secondary_genre = ?) AND ${visSql(v)} AND ${existsTracks} ${RELEASE_ORDER}`
         )
-        .all(genre, genre)
+        .all(genre, genre),
+      v
     );
     out.tracks = hydrateTracks(
       db
         .prepare(
-          `${TRACK_SELECT} WHERE (r.primary_genre = ? OR r.secondary_genre = ?) ORDER BY t.play_count DESC, t.id ASC LIMIT 20`
+          `${TRACK_SELECT} WHERE (r.primary_genre = ? OR r.secondary_genre = ?) AND ${visSql(v)} ORDER BY t.play_count DESC, t.id ASC LIMIT 20`
         )
-        .all(genre, genre)
+        .all(genre, genre),
+      v
     );
     return res.json(out);
   }
@@ -109,8 +125,9 @@ router.get('/explore', (req, res) => {
   if (kind === 'new' || kind === 'all') {
     out.releases = hydrateReleases(
       db
-        .prepare(`${RELEASE_SELECT} WHERE r.is_leak = 0 AND ${existsTracks} ${RELEASE_ORDER} LIMIT ${kind === 'new' ? 60 : 16}`)
-        .all()
+        .prepare(`${RELEASE_SELECT} WHERE r.is_leak = 0 AND ${visSql(v)} AND ${existsTracks} ${RELEASE_ORDER} LIMIT ${kind === 'new' ? 60 : 16}`)
+        .all(),
+      v
     );
   }
 
@@ -119,11 +136,12 @@ router.get('/explore', (req, res) => {
     out.tracks = hydrateTracks(
       db
         .prepare(
-          `${TRACK_SELECT} WHERE r.is_leak = 0 AND t.play_count < 30
+          `${TRACK_SELECT} WHERE r.is_leak = 0 AND ${visSql(v)} AND t.play_count < 30
            ORDER BY (SELECT COUNT(*) FROM likes l WHERE l.track_id = t.id) DESC, RANDOM()
            LIMIT ${kind === 'gems' ? 40 : 12}`
         )
-        .all()
+        .all(),
+      v
     );
   }
 
@@ -138,6 +156,7 @@ router.get('/artist-names', (_req, res) => {
 });
 
 router.get('/artists/:id', optionalUser, (req, res) => {
+  const v = viewerOf(req);
   const id = Number(req.params.id);
   const row = db.prepare('SELECT * FROM artists WHERE id = ?').get(id);
   if (!row) return res.status(404).json({ error: 'Artiste introuvable.' });
@@ -151,12 +170,14 @@ router.get('/artists/:id', optionalUser, (req, res) => {
   const notEmpty = 'EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id)';
 
   const mainReleases = hydrateReleases(
-    db.prepare(`${RELEASE_SELECT} WHERE ${isMain} AND ${notEmpty} ${RELEASE_ORDER}`).all({ id })
+    db.prepare(`${RELEASE_SELECT} WHERE ${isMain} AND ${visSql(v)} AND ${notEmpty} ${RELEASE_ORDER}`).all({ id }),
+    v
   );
   const collabs = hydrateReleases(
     db
-      .prepare(`${RELEASE_SELECT} WHERE ${isFeat} AND r.is_leak = 0 AND ${notEmpty} ${RELEASE_ORDER}`)
-      .all({ id })
+      .prepare(`${RELEASE_SELECT} WHERE ${isFeat} AND r.is_leak = 0 AND ${visSql(v)} AND ${notEmpty} ${RELEASE_ORDER}`)
+      .all({ id }),
+    v
   );
 
   const albums = mainReleases.filter((r) => !r.is_leak && r.type === 'album');
@@ -168,9 +189,10 @@ router.get('/artists/:id', optionalUser, (req, res) => {
     db
       .prepare(
         `${TRACK_SELECT} JOIN track_artists ta ON ta.track_id = t.id
-         WHERE ta.artist_id = ? ORDER BY t.play_count DESC, t.id ASC LIMIT 5`
+         WHERE ta.artist_id = ? AND ${visSql(v)} ORDER BY t.play_count DESC, t.id ASC LIMIT 5`
       )
-      .all(id)
+      .all(id),
+    v
   );
 
   const followers = db.prepare('SELECT COUNT(*) AS n FROM follows WHERE artist_id = ?').get(id).n;
@@ -180,7 +202,7 @@ router.get('/artists/:id', optionalUser, (req, res) => {
 
   res.json({
     artist: artistDTO(row),
-    total_plays: artistTotalPlays(id),
+    total_plays: artistTotalPlays(id, v),
     followers,
     is_following: isFollowing,
     top_tracks: topTracks,
@@ -194,14 +216,16 @@ router.get('/artists/:id', optionalUser, (req, res) => {
 
 /** Toutes les pistes d'un artiste (pour la "Lecture aléatoire de l'artiste"). */
 router.get('/artists/:id/tracks', (req, res) => {
+  const v = viewerOf(req);
   const id = Number(req.params.id);
   const tracks = hydrateTracks(
     db
       .prepare(
         `${TRACK_SELECT} JOIN track_artists ta ON ta.track_id = t.id
-         WHERE ta.artist_id = ? ORDER BY r.release_date DESC, t.track_number ASC`
+         WHERE ta.artist_id = ? AND ${visSql(v)} ORDER BY r.release_date DESC, t.track_number ASC`
       )
-      .all(id)
+      .all(id),
+    v
   );
   res.json({ tracks });
 });
@@ -209,19 +233,24 @@ router.get('/artists/:id/tracks', (req, res) => {
 /* ------------------------------ Sorties & pistes ------------------------------ */
 
 router.get('/releases/:id', (req, res) => {
+  const v = viewerOf(req);
   const id = Number(req.params.id);
   const row = db.prepare(`${RELEASE_SELECT} WHERE r.id = ?`).get(id);
-  if (!row) return res.status(404).json({ error: 'Sortie introuvable.' });
-  const [release] = hydrateReleases([row]);
-  const tracks = hydrateTracks(db.prepare(`${TRACK_SELECT} WHERE t.release_id = ? ORDER BY t.track_number ASC, t.id ASC`).all(id));
+  if (!row || !canSeeRelease(v, row)) return res.status(404).json({ error: 'Sortie introuvable.' });
+  const [release] = hydrateReleases([row], v);
+  const tracks = hydrateTracks(
+    db.prepare(`${TRACK_SELECT} WHERE t.release_id = ? ORDER BY t.track_number ASC, t.id ASC`).all(id),
+    v
+  );
   res.json({ release, tracks });
 });
 
 router.get('/tracks/:id', (req, res) => {
+  const v = viewerOf(req);
   const id = Number(req.params.id);
   const row = db.prepare(`${TRACK_SELECT} WHERE t.id = ?`).get(id);
-  if (!row) return res.status(404).json({ error: 'Titre introuvable.' });
-  const [track] = hydrateTracks([row]);
+  if (!row || !canSeeRelease(v, row)) return res.status(404).json({ error: 'Titre introuvable.' });
+  const [track] = hydrateTracks([row], v);
   const lyrics = db.prepare('SELECT lyrics FROM tracks WHERE id = ?').get(id)?.lyrics || '';
   res.json({ track: { ...track, lyrics } });
 });
@@ -229,8 +258,13 @@ router.get('/tracks/:id', (req, res) => {
 /** Appelé par le lecteur après 10 secondes d'écoute effective. */
 router.post('/tracks/:id/play', optionalUser, (req, res) => {
   const id = Number(req.params.id);
-  const exists = db.prepare('SELECT id FROM tracks WHERE id = ?').get(id);
-  if (!exists) return res.status(404).json({ error: 'Titre introuvable.' });
+  const exists = db
+    .prepare(
+      `SELECT t.id, r.primary_artist_id, COALESCE(r.visibility, 'public') AS visibility
+       FROM tracks t JOIN releases r ON r.id = t.release_id WHERE t.id = ?`
+    )
+    .get(id);
+  if (!exists || !canSeeRelease(viewerOf(req), exists)) return res.status(404).json({ error: 'Titre introuvable.' });
   db.prepare('UPDATE tracks SET play_count = play_count + 1 WHERE id = ?').run(id);
   if (req.userId) db.prepare('INSERT INTO listens (user_id, track_id) VALUES (?, ?)').run(req.userId, id);
   const { play_count } = db.prepare('SELECT play_count FROM tracks WHERE id = ?').get(id);
@@ -240,6 +274,7 @@ router.post('/tracks/:id/play', optionalUser, (req, res) => {
 /* ------------------------------ Recherche ------------------------------ */
 
 router.get('/search', (req, res) => {
+  const v = viewerOf(req);
   const q = String(req.query.q || '').trim().slice(0, 80);
   if (q.length < 1) return res.json({ best: null, tracks: [], artists: [], releases: [] });
 
@@ -248,8 +283,7 @@ router.get('/search', (req, res) => {
 
   const artists = db
     .prepare(
-      `SELECT a.*, (SELECT COALESCE(SUM(t.play_count), 0) FROM tracks t
-                      JOIN track_artists ta ON ta.track_id = t.id WHERE ta.artist_id = a.id) AS total_plays
+      `SELECT a.*, ${playsOf(v)} AS total_plays
        FROM artists a WHERE a.name LIKE ? ESCAPE '\\'
        ORDER BY (a.name LIKE ? ESCAPE '\\') DESC, total_plays DESC LIMIT 6`
     )
@@ -260,22 +294,24 @@ router.get('/search', (req, res) => {
     db
       .prepare(
         `${TRACK_SELECT}
-         WHERE t.title LIKE @like ESCAPE '\\'
+         WHERE ${visSql(v)} AND (t.title LIKE @like ESCAPE '\\'
             OR EXISTS (SELECT 1 FROM track_artists ta JOIN artists a ON a.id = ta.artist_id
-                       WHERE ta.track_id = t.id AND a.name LIKE @like ESCAPE '\\')
+                       WHERE ta.track_id = t.id AND a.name LIKE @like ESCAPE '\\'))
          ORDER BY (t.title LIKE @prefix ESCAPE '\\') DESC, t.play_count DESC LIMIT 8`
       )
-      .all({ like, prefix })
+      .all({ like, prefix }),
+    v
   );
 
   const releases = hydrateReleases(
     db
       .prepare(
         `${RELEASE_SELECT}
-         WHERE r.type IN ('album','ep') AND (r.title LIKE @like ESCAPE '\\' OR a.name LIKE @like ESCAPE '\\')
+         WHERE ${visSql(v)} AND r.type IN ('album','ep') AND (r.title LIKE @like ESCAPE '\\' OR a.name LIKE @like ESCAPE '\\')
          ORDER BY (r.title LIKE @prefix ESCAPE '\\') DESC, r.release_date DESC LIMIT 6`
       )
-      .all({ like, prefix })
+      .all({ like, prefix }),
+    v
   );
 
   // Meilleur résultat : artiste au nom exact/préfixe, sinon premier titre, sinon artiste, sinon sortie

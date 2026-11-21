@@ -7,6 +7,7 @@ import { handleUpload } from '../upload.js';
 import { RELEASE_SELECT, hydrateReleases, hydrateTracks, TRACK_SELECT, userDTO, artistDTO } from '../queries.js';
 import { cleanupUploadedFiles, cleanName, deleteOrphanFiles, fileToUrl } from '../utils.js';
 import path from 'node:path';
+import { canSeeReleaseId, viewerOf, visSql } from '../visibility.js';
 
 const router = express.Router();
 
@@ -105,12 +106,21 @@ router.patch('/auth/me', requireUser, handleUpload, (req, res) => {
 
 /* ============================== Bibliothèque ============================== */
 
-function playlistSummaries(userId, onlyId = null) {
+/** Le titre existe-t-il ET ce spectateur a-t-il le droit de le voir ? */
+function visibleTrack(req, trackId) {
+  const row = db.prepare('SELECT release_id FROM tracks WHERE id = ?').get(trackId);
+  return !!row && canSeeReleaseId(viewerOf(req), row.release_id);
+}
+
+function playlistSummaries(userId, onlyId = null, viewer = null) {
+  const v = viewer || { userId, artistId: 0 };
   const rows = db
     .prepare(
       `SELECT p.*,
-         (SELECT COUNT(*) FROM playlist_tracks pt WHERE pt.playlist_id = p.id) AS track_count,
-         (SELECT COALESCE(SUM(t.duration_seconds), 0) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id WHERE pt.playlist_id = p.id) AS total_duration
+         (SELECT COUNT(*) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id JOIN releases r ON r.id = t.release_id
+            WHERE pt.playlist_id = p.id AND ${visSql(v)}) AS track_count,
+         (SELECT COALESCE(SUM(t.duration_seconds), 0) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id JOIN releases r ON r.id = t.release_id
+            WHERE pt.playlist_id = p.id AND ${visSql(v)}) AS total_duration
        FROM playlists p WHERE p.user_id = ? ${onlyId ? 'AND p.id = ?' : ''}
        ORDER BY p.updated_at DESC, p.id DESC`
     )
@@ -119,7 +129,7 @@ function playlistSummaries(userId, onlyId = null) {
   const coversStmt = db.prepare(
     `SELECT DISTINCT r.cover_url FROM playlist_tracks pt
        JOIN tracks t ON t.id = pt.track_id JOIN releases r ON r.id = t.release_id
-      WHERE pt.playlist_id = ? AND r.cover_url IS NOT NULL
+      WHERE pt.playlist_id = ? AND r.cover_url IS NOT NULL AND ${visSql(v)}
       ORDER BY pt.position ASC LIMIT 4`
   );
   return rows.map((p) => ({
@@ -138,23 +148,24 @@ function playlistSummaries(userId, onlyId = null) {
 router.get('/me/library', requireUser, (req, res) => {
   const likeIds = db.prepare('SELECT track_id FROM likes WHERE user_id = ?').all(req.userId).map((r) => r.track_id);
   const followIds = db.prepare('SELECT artist_id FROM follows WHERE user_id = ?').all(req.userId).map((r) => r.artist_id);
-  res.json({ like_ids: likeIds, follow_ids: followIds, playlists: playlistSummaries(req.userId) });
+  res.json({ like_ids: likeIds, follow_ids: followIds, playlists: playlistSummaries(req.userId, null, viewerOf(req)) });
 });
 
 /* ------------------------------ Coups de cœur ------------------------------ */
 
 router.get('/me/likes', requireUser, (req, res) => {
+  const v = viewerOf(req);
   const rows = db
     .prepare(
-      `${TRACK_SELECT} JOIN likes l ON l.track_id = t.id WHERE l.user_id = ? ORDER BY l.created_at DESC, l.rowid DESC`
+      `${TRACK_SELECT} JOIN likes l ON l.track_id = t.id WHERE l.user_id = ? AND ${visSql(v)} ORDER BY l.created_at DESC, l.rowid DESC`
     )
     .all(req.userId);
-  res.json({ tracks: hydrateTracks(rows) });
+  res.json({ tracks: hydrateTracks(rows, v) });
 });
 
 router.post('/tracks/:id/like', requireUser, (req, res) => {
   const trackId = Number(req.params.id);
-  if (!db.prepare('SELECT 1 FROM tracks WHERE id = ?').get(trackId)) return res.status(404).json({ error: 'Titre introuvable.' });
+  if (!visibleTrack(req, trackId)) return res.status(404).json({ error: 'Titre introuvable.' });
   const existing = db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND track_id = ?').get(req.userId, trackId);
   if (existing) {
     db.prepare('DELETE FROM likes WHERE user_id = ? AND track_id = ?').run(req.userId, trackId);
@@ -192,6 +203,7 @@ router.get('/me/follows', requireUser, (req, res) => {
 
 router.get('/me/recommendations', requireUser, (req, res) => {
   const uid = req.userId;
+  const v = viewerOf(req);
 
   // Genres les plus écoutés (écoutes + coups de cœur)
   const genreRows = db
@@ -241,11 +253,12 @@ router.get('/me/recommendations', requireUser, (req, res) => {
     db
       .prepare(
         `${RELEASE_SELECT}
-         WHERE r.is_leak = 0 AND EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id) AND (${conditions.join(' OR ')})
+         WHERE r.is_leak = 0 AND ${visSql(v)} AND EXISTS (SELECT 1 FROM tracks t WHERE t.release_id = r.id) AND (${conditions.join(' OR ')})
          ORDER BY ${topArtistIds.length ? `(r.primary_artist_id IN (${topArtistIds.map((_, i) => `@a${i}`).join(',')})) DESC,` : ''} r.release_date DESC, r.id DESC
          LIMIT 12`
       )
-      .all(params)
+      .all(params),
+    v
   );
 
   let artists = [];
@@ -259,7 +272,7 @@ router.get('/me/recommendations', requireUser, (req, res) => {
     artists = db
       .prepare(
         `SELECT DISTINCT a.* FROM artists a JOIN releases r ON r.primary_artist_id = a.id
-         WHERE (${gc.join(' OR ')}) AND a.id NOT IN (SELECT artist_id FROM follows WHERE user_id = @uid)
+         WHERE (${gc.join(' OR ')}) AND ${visSql(v)} AND a.id NOT IN (SELECT artist_id FROM follows WHERE user_id = @uid)
          ORDER BY RANDOM() LIMIT 10`
       )
       .all(gp)
@@ -286,7 +299,7 @@ function touch(id) {
 }
 
 router.get('/playlists', requireUser, (req, res) => {
-  res.json({ playlists: playlistSummaries(req.userId) });
+  res.json({ playlists: playlistSummaries(req.userId, null, viewerOf(req)) });
 });
 
 router.post('/playlists', requireUser, (req, res) => {
@@ -294,7 +307,7 @@ router.post('/playlists', requireUser, (req, res) => {
   if (!title) return res.status(400).json({ error: 'Donnez un nom à votre playlist.' });
   const description = String(req.body?.description || '').slice(0, 500);
   const info = db.prepare('INSERT INTO playlists (user_id, title, description) VALUES (?, ?, ?)').run(req.userId, title, description);
-  const [summary] = playlistSummaries(req.userId, Number(info.lastInsertRowid));
+  const [summary] = playlistSummaries(req.userId, Number(info.lastInsertRowid), viewerOf(req));
   res.status(201).json({ playlist: summary });
 });
 
@@ -302,10 +315,10 @@ router.get('/playlists/:id', requireUser, (req, res) => {
   const playlist = ownedPlaylist(req, res);
   if (!playlist) return;
   const rows = db
-    .prepare(`${TRACK_SELECT} JOIN playlist_tracks pt ON pt.track_id = t.id WHERE pt.playlist_id = ? ORDER BY pt.position ASC`)
+    .prepare(`${TRACK_SELECT} JOIN playlist_tracks pt ON pt.track_id = t.id WHERE pt.playlist_id = ? AND ${visSql(viewerOf(req))} ORDER BY pt.position ASC`)
     .all(playlist.id);
-  const [summary] = playlistSummaries(req.userId, playlist.id);
-  res.json({ playlist: summary, tracks: hydrateTracks(rows) });
+  const [summary] = playlistSummaries(req.userId, playlist.id, viewerOf(req));
+  res.json({ playlist: summary, tracks: hydrateTracks(rows, viewerOf(req)) });
 });
 
 router.patch('/playlists/:id', requireUser, handleUpload, (req, res) => {
@@ -342,7 +355,7 @@ router.patch('/playlists/:id', requireUser, handleUpload, (req, res) => {
     playlist.id
   );
   if (oldCover) deleteOrphanFiles([oldCover]);
-  const [summary] = playlistSummaries(req.userId, playlist.id);
+  const [summary] = playlistSummaries(req.userId, playlist.id, viewerOf(req));
   res.json({ playlist: summary });
 });
 
@@ -358,7 +371,7 @@ router.post('/playlists/:id/tracks', requireUser, (req, res) => {
   const playlist = ownedPlaylist(req, res);
   if (!playlist) return;
   const trackId = Number(req.body?.track_id);
-  if (!db.prepare('SELECT 1 FROM tracks WHERE id = ?').get(trackId)) return res.status(404).json({ error: 'Titre introuvable.' });
+  if (!visibleTrack(req, trackId)) return res.status(404).json({ error: 'Titre introuvable.' });
   const already = db.prepare('SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?').get(playlist.id, trackId);
   if (already) return res.json({ added: false, already: true });
   const pos = db.prepare('SELECT COALESCE(MAX(position), -1) + 1 AS p FROM playlist_tracks WHERE playlist_id = ?').get(playlist.id).p;

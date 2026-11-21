@@ -57,7 +57,16 @@ export const GENRES = [
   'Autre',
 ];
 
-export const THEMES = ['oled', 'light', 'midnight', 'neon', 'emerald'];
+export const THEMES = [
+  'oled', 'light', 'midnight', 'neon', 'emerald',
+  'aero', 'metro', 'xp', 'spotify', 'apple', 'apple-dark', 'glass', 'sunset', 'ocean',
+  'rose', 'vaporwave', 'terminal', 'mocha', 'nord', 'mono', 'gold',
+  'aquametro', 'winxp', 'retromac',
+  'pinktape', 'wlr', 'fancythat', 'tlop', 'graduation', 'astroworld', 'morechaos',
+  'win95', 'winamp', 'gameboy', 'imac',
+];
+
+export const VISIBILITIES = ['public', 'friends'];
 export const DENSITIES = ['comfortable', 'compact'];
 export const COVER_STYLES = ['rounded', 'square'];
 

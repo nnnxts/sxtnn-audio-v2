@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { AlignLeft, ChevronDown, ChevronUp, FileAudio, GripVertical, ImagePlus, Loader2, Plus, Rocket, Save, Trash2, X } from 'lucide-react';
+import { AlignLeft, ChevronDown, ChevronUp, FileAudio, Globe, GripVertical, ImagePlus, Loader2, Lock, Plus, Rocket, Save, Trash2, X } from 'lucide-react';
 import { api, uploadForm } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
 import type { DistroTrack, Release, ReleaseType } from '../../lib/types';
@@ -195,6 +195,9 @@ function TrackEditor({
               onChange={(e) => onChange({ lyrics: e.target.value })}
               placeholder="Collez ou écrivez les paroles ici…"
             />
+            <p className="mt-1.5 text-xs text-muted">
+              Pour les synchroniser comme sur Musixmatch : publiez d'abord la sortie, puis ouvrez Catalogue → « Paroles synchronisées ».
+            </p>
           </div>
         )}
       </div>
@@ -224,6 +227,7 @@ export function ReleaseForm({ mode, initial, onSaved, onCancel, embedded = false
   const [primary, setPrimary] = useState(initial?.release.primary_genre ?? 'Rage');
   const [secondary, setSecondary] = useState(initial?.release.secondary_genre ?? '');
   const [isLeak, setIsLeak] = useState(initial?.release.is_leak ?? false);
+  const [visibility, setVisibility] = useState<'public' | 'friends'>(initial?.release.visibility === 'friends' ? 'friends' : 'public');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [removeCover, setRemoveCover] = useState(false);
@@ -309,6 +313,7 @@ export function ReleaseForm({ mode, initial, onSaved, onCancel, embedded = false
       primary_genre: primary,
       secondary_genre: secondary,
       is_leak: isLeak,
+      visibility,
       remove_cover: removeCover && !coverFile,
       remove_canvas: removeCanvas && !canvasFile,
       tracks: tracks.map((t) => ({
@@ -486,6 +491,37 @@ export function ReleaseForm({ mode, initial, onSaved, onCancel, embedded = false
                 label="Est-ce un Leak ?"
                 description="Affiche un badge rouge LEAK et classe la sortie dans l'onglet « Leaks » de votre profil."
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="label">Qui peut écouter cette sortie ?</label>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-card p-1.5" role="radiogroup" aria-label="Visibilité">
+                {([
+                  { id: 'public', icon: <Globe size={16} />, title: 'Tout le monde', text: 'Visible sur tout le site' },
+                  { id: 'friends', icon: <Lock size={16} />, title: 'Amis uniquement', text: 'Démo privée, invisibles pour les autres' },
+                ] as const).map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={visibility === o.id}
+                    onClick={() => setVisibility(o.id)}
+                    className={`flex flex-col items-start gap-0.5 rounded-xl px-4 py-3 text-left transition-colors ${
+                      visibility === o.id ? 'bg-accent/15 text-fg ring-1 ring-accent' : 'text-muted hover:bg-hover'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-bold">
+                      {o.icon} {o.title}
+                    </span>
+                    <span className="text-xs text-muted">{o.text}</span>
+                  </button>
+                ))}
+              </div>
+              {visibility === 'friends' && (
+                <p className="mt-2 text-xs text-muted">
+                  Seuls les comptes que vous avez invités (onglet « Amis ») pourront la voir et l'écouter. Elle n'apparaît ni à l'accueil, ni dans la recherche pour les autres, et ne passe jamais « à la une ».
+                </p>
+              )}
             </div>
           </div>
         </div>

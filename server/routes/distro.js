@@ -5,10 +5,12 @@ import archiver from 'archiver';
 import crypto from 'node:crypto';
 import multer from 'multer';
 import db from '../db.js';
-import { CANVAS_MAX_BYTES, CANVAS_MAX_SECONDS, GENRES, TMP_DIR, UPLOADS_DIR } from '../config.js';
+import { CANVAS_MAX_BYTES, CANVAS_MAX_SECONDS, GENRES, TMP_DIR, UPLOADS_DIR, VISIBILITIES } from '../config.js';
 import { requireArtist, signArtistToken, signBackupToken, verifyToken } from '../auth.js';
 import { handleUpload, readDuration, readMediaDuration } from '../upload.js';
 import { RestoreError, restoreFromZip } from '../restore.js';
+import { ADMIN_KEY, IS_ONLINE, accessRequired, adminKeyOk, checkCode } from '../access.js';
+import { mediaTokenFor, withToken } from '../visibility.js';
 import { RELEASE_SELECT, RELEASE_ORDER, artistDTO, getOrCreateArtist, hydrateReleases } from '../queries.js';
 import {
   cleanName,
@@ -42,7 +44,21 @@ function sendError(res, err) {
 
 /* ============================== Connexion artiste ============================== */
 
+/** Dit si un code est exigé pour entrer dans l'accès artiste (aucune donnée sensible). */
+router.get('/distro/access', (_req, res) => {
+  res.json({ code_required: accessRequired() });
+});
+
+/** Vérifie le code d'accès (1re étape de l'écran « Accès Artiste »). */
+router.post('/distro/check-code', (req, res) => {
+  const result = checkCode(req, req.body?.code);
+  if (!result.ok) return res.status(result.status).json({ error: result.error });
+  res.json({ ok: true });
+});
+
 router.post('/distro/login', (req, res) => {
+  const gate = checkCode(req, req.body?.code);
+  if (!gate.ok) return res.status(gate.status).json({ error: gate.error });
   const name = cleanName(req.body?.name);
   if (name.length < 1) return res.status(400).json({ error: 'Entrez votre nom d\'artiste.' });
 
@@ -148,7 +164,9 @@ router.get('/distro/releases/:id', requireArtist, (req, res) => {
   const id = Number(req.params.id);
   const row = db.prepare(`${RELEASE_SELECT} WHERE r.id = ? AND r.primary_artist_id = ?`).get(id, req.artistId);
   if (!row) return res.status(404).json({ error: 'Sortie introuvable.' });
-  const [release] = hydrateReleases([row]);
+  const viewer = { userId: 0, artistId: req.artistId };
+  const [release] = hydrateReleases([row], viewer);
+  const mediaToken = release.visibility === 'friends' ? mediaTokenFor(viewer) : null;
 
   const tracks = db.prepare('SELECT * FROM tracks WHERE release_id = ? ORDER BY track_number ASC, id ASC').all(id);
   const linkStmt = db.prepare(
@@ -160,8 +178,8 @@ router.get('/distro/releases/:id', requireArtist, (req, res) => {
       id: t.id,
       track_number: t.track_number,
       title: t.title,
-      audio_url: t.audio_url,
-      canvas_url: t.canvas_url || null,
+      audio_url: withToken(t.audio_url, mediaToken),
+      canvas_url: withToken(t.canvas_url || null, mediaToken),
       duration_seconds: t.duration_seconds,
       isrc: t.isrc || '',
       is_explicit: !!t.is_explicit,
@@ -235,6 +253,7 @@ function parsePayload(req) {
     primaryGenre,
     secondaryGenre,
     isLeak: toBool(data.is_leak),
+    visibility: VISIBILITIES.includes(data.visibility) ? data.visibility : undefined,
     removeCover: toBool(data.remove_cover),
     removeCanvas: toBool(data.remove_canvas),
     tracks,
@@ -386,8 +405,8 @@ router.post('/distro/releases', requireArtist, handleUpload, async (req, res) =>
     const releaseId = db.transaction(() => {
       const info = db
         .prepare(
-          `INSERT INTO releases (title, type, release_date, label, primary_genre, secondary_genre, cover_url, canvas_url, is_leak, primary_artist_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO releases (title, type, release_date, label, primary_genre, secondary_genre, cover_url, canvas_url, is_leak, primary_artist_id, visibility, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
         )
         .run(
           payload.title,
@@ -399,7 +418,8 @@ router.post('/distro/releases', requireArtist, handleUpload, async (req, res) =>
           coverUrl,
           releaseCanvasUrl,
           payload.isLeak ? 1 : 0,
-          artist.id
+          artist.id,
+          payload.visibility || 'public'
         );
       const id = Number(info.lastInsertRowid);
       saveTracks({ releaseId: id, primaryArtist: artist, tracks: payload.tracks, fileMap: req.fileMap, durations });
@@ -448,7 +468,7 @@ router.put('/distro/releases/:id', requireArtist, handleUpload, async (req, res)
 
     const removed = db.transaction(() => {
       db.prepare(
-        `UPDATE releases SET title = ?, type = ?, release_date = ?, label = ?, primary_genre = ?, secondary_genre = ?, cover_url = ?, canvas_url = ?, is_leak = ? WHERE id = ?`
+        `UPDATE releases SET title = ?, type = ?, release_date = ?, label = ?, primary_genre = ?, secondary_genre = ?, cover_url = ?, canvas_url = ?, is_leak = ?, visibility = ?, updated_at = datetime('now') WHERE id = ?`
       ).run(
         payload.title,
         payload.type,
@@ -459,6 +479,7 @@ router.put('/distro/releases/:id', requireArtist, handleUpload, async (req, res)
         coverUrl,
         canvasUrl,
         payload.isLeak ? 1 : 0,
+        payload.visibility || release.visibility || 'public',
         id
       );
       return saveTracks({ releaseId: id, primaryArtist: artist, tracks: payload.tracks, fileMap: req.fileMap, durations });
@@ -469,6 +490,33 @@ router.put('/distro/releases/:id', requireArtist, handleUpload, async (req, res)
     res.json({ id });
   } catch (err) {
     cleanupUploadedFiles(req.files);
+    sendError(res, err);
+  }
+});
+
+/* ------------------------------ Paroles (synchronisées) ------------------------------ */
+
+/**
+ * Enregistre les paroles d'un morceau DÉJÀ publié (texte simple ou format LRC synchronisé).
+ * La sortie remonte « à la une » comme après toute autre modification.
+ */
+router.put('/distro/tracks/:id/lyrics', requireArtist, (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const track = db
+      .prepare(
+        `SELECT t.id, t.release_id FROM tracks t JOIN releases r ON r.id = t.release_id
+         WHERE t.id = ? AND r.primary_artist_id = ?`
+      )
+      .get(id, req.artistId);
+    if (!track) throw new HttpError(404, 'Morceau introuvable.');
+    const lyrics = String(req.body?.lyrics ?? '').replace(/\r\n?/g, '\n').slice(0, 30000);
+    db.transaction(() => {
+      db.prepare('UPDATE tracks SET lyrics = ? WHERE id = ?').run(lyrics, id);
+      db.prepare("UPDATE releases SET updated_at = datetime('now') WHERE id = ?").run(track.release_id);
+    })();
+    res.json({ ok: true, has_lyrics: lyrics.trim() !== '' });
+  } catch (err) {
     sendError(res, err);
   }
 });
@@ -502,16 +550,6 @@ router.delete('/distro/releases/:id', requireArtist, (req, res) => {
  * - absente : le backup reste ouvert aux artistes connectés ; la restauration est désactivée
  *   en ligne (trop dangereuse sans clé), mais autorisée en local pour les tests.
  */
-const ADMIN_KEY = String(process.env.ADMIN_KEY || '').trim();
-const IS_ONLINE = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PROJECT_ID;
-
-function adminKeyOk(provided) {
-  if (!ADMIN_KEY) return true;
-  const a = crypto.createHash('sha256').update(String(provided || '')).digest();
-  const b = crypto.createHash('sha256').update(ADMIN_KEY).digest();
-  return crypto.timingSafeEqual(a, b);
-}
-
 const restoreAvailable = () => !!ADMIN_KEY || !IS_ONLINE;
 
 router.get('/distro/admin-status', requireArtist, (_req, res) => {
@@ -519,7 +557,8 @@ router.get('/distro/admin-status', requireArtist, (_req, res) => {
 });
 
 router.post('/distro/backup-link', requireArtist, (req, res) => {
-  if (!adminKeyOk(req.body?.admin_key)) return res.status(403).json({ error: 'Clé admin incorrecte.' });
+  const gate = checkCode(req, req.body?.admin_key);
+  if (!gate.ok) return res.status(gate.status).json({ error: gate.error === 'Code incorrect.' ? 'Clé admin incorrecte.' : gate.error });
   res.json({ url: `/api/distro/backup?t=${encodeURIComponent(signBackupToken(req.artistId))}` });
 });
 

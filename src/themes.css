@@ -1,0 +1,394 @@
+/* ============================================================
+ * THÈMES SUPPLÉMENTAIRES (chargé après index.css)
+ * - palettes : mêmes variables que les 5 thèmes d'origine
+ * - décors  : un seul calque fixe (html::before) sans flou coûteux
+ * - Metro   : seul thème animé, 3 halos qui dérivent (transform GPU)
+ * ============================================================ */
+
+/* ---------- Palettes ---------- */
+
+/* Frutiger Aero : ciel, bulles, verre brillant */
+[data-theme='aero'] {
+  --bg: 200 232 250; --surface: 234 247 255; --card: 255 255 255; --hover: 205 230 247; --line: 160 204 230;
+  --fg: 12 44 74; --muted: 64 104 134; --accent: 14 140 230; --accent2: 52 205 158; --onaccent: 255 255 255;
+  --danger: 220 38 38; color-scheme: light;
+}
+/* Metro Aqua (ancien Frutiger Metro) : tuiles plates + lueurs aqua animées */
+[data-theme='aquametro'] {
+  --bg: 3 26 42; --surface: 6 40 60; --card: 9 54 80; --hover: 15 74 102; --line: 20 90 120;
+  --fg: 230 250 255; --muted: 128 186 208; --accent: 0 214 143; --accent2: 0 168 255; --onaccent: 2 22 34;
+  --danger: 255 90 100; color-scheme: dark;
+}
+/* Windows XP : Luna bleu, beige, boutons biseautés */
+[data-theme='xp'] {
+  --bg: 236 233 216; --surface: 245 244 234; --card: 255 255 255; --hover: 214 227 247; --line: 172 168 153;
+  --fg: 20 20 20; --muted: 92 92 92; --accent: 36 94 220; --accent2: 74 144 255; --onaccent: 255 255 255;
+  --danger: 200 30 30; color-scheme: light;
+}
+/* Façon Spotify : gris très sombre, vert vif uni */
+[data-theme='spotify'] {
+  --bg: 18 18 18; --surface: 24 24 24; --card: 40 40 40; --hover: 52 52 52; --line: 44 44 44;
+  --fg: 255 255 255; --muted: 179 179 179; --accent: 30 215 96; --accent2: 30 215 96; --onaccent: 0 0 0;
+  --danger: 233 60 60; color-scheme: dark;
+}
+/* Façon Apple Music (clair) : blanc, rouge-rose */
+[data-theme='apple'] {
+  --bg: 255 255 255; --surface: 247 247 249; --card: 242 242 247; --hover: 229 229 234; --line: 229 229 234;
+  --fg: 29 29 31; --muted: 134 134 139; --accent: 250 45 72; --accent2: 255 85 120; --onaccent: 255 255 255;
+  --danger: 255 59 48; color-scheme: light;
+}
+/* Façon Apple Music (sombre) */
+[data-theme='apple-dark'] {
+  --bg: 0 0 0; --surface: 20 20 22; --card: 36 36 38; --hover: 52 52 55; --line: 48 48 52;
+  --fg: 255 255 255; --muted: 152 152 159; --accent: 250 45 72; --accent2: 255 85 120; --onaccent: 255 255 255;
+  --danger: 255 69 58; color-scheme: dark;
+}
+/* Liquid Glass : verre translucide, halos colorés */
+[data-theme='glass'] {
+  --bg: 9 11 26; --surface: 20 24 48; --card: 30 36 66; --hover: 46 54 92; --line: 58 68 112;
+  --fg: 240 244 255; --muted: 150 162 206; --accent: 110 150 255; --accent2: 200 120 255; --onaccent: 8 10 30;
+  --danger: 255 90 110; color-scheme: dark;
+}
+[data-theme='sunset'] {
+  --bg: 26 11 22; --surface: 38 16 30; --card: 52 22 40; --hover: 72 30 54; --line: 86 38 62;
+  --fg: 255 240 232; --muted: 206 160 160; --accent: 255 107 53; --accent2: 255 45 120; --onaccent: 30 6 8;
+  --danger: 255 80 80; color-scheme: dark;
+}
+[data-theme='ocean'] {
+  --bg: 4 20 36; --surface: 8 32 54; --card: 12 44 72; --hover: 20 62 96; --line: 28 76 112;
+  --fg: 226 244 255; --muted: 128 176 204; --accent: 0 190 255; --accent2: 56 120 255; --onaccent: 2 18 32;
+  --danger: 255 90 100; color-scheme: dark;
+}
+[data-theme='rose'] {
+  --bg: 255 244 247; --surface: 255 236 242; --card: 252 228 236; --hover: 248 210 224; --line: 245 196 212;
+  --fg: 60 16 36; --muted: 150 90 112; --accent: 236 72 153; --accent2: 251 113 133; --onaccent: 255 255 255;
+  --danger: 220 38 38; color-scheme: light;
+}
+[data-theme='vaporwave'] {
+  --bg: 20 8 44; --surface: 32 14 68; --card: 46 22 92; --hover: 66 32 120; --line: 90 46 150;
+  --fg: 255 232 250; --muted: 190 150 220; --accent: 255 113 206; --accent2: 1 205 254; --onaccent: 30 6 50;
+  --danger: 255 90 120; color-scheme: dark;
+}
+[data-theme='terminal'] {
+  --bg: 1 8 2; --surface: 4 18 6; --card: 8 28 10; --hover: 14 44 18; --line: 22 70 30;
+  --fg: 120 255 150; --muted: 70 170 90; --accent: 57 255 110; --accent2: 140 255 90; --onaccent: 0 20 4;
+  --danger: 255 90 90; color-scheme: dark;
+}
+/* Catppuccin Mocha */
+[data-theme='mocha'] {
+  --bg: 30 30 46; --surface: 24 24 37; --card: 49 50 68; --hover: 69 71 90; --line: 69 71 90;
+  --fg: 205 214 244; --muted: 166 173 200; --accent: 203 166 247; --accent2: 245 194 231; --onaccent: 30 30 46;
+  --danger: 243 139 168; color-scheme: dark;
+}
+[data-theme='nord'] {
+  --bg: 46 52 64; --surface: 59 66 82; --card: 67 76 94; --hover: 76 86 106; --line: 76 86 106;
+  --fg: 236 239 244; --muted: 160 170 188; --accent: 136 192 208; --accent2: 129 161 193; --onaccent: 46 52 64;
+  --danger: 191 97 106; color-scheme: dark;
+}
+[data-theme='mono'] {
+  --bg: 0 0 0; --surface: 12 12 12; --card: 22 22 22; --hover: 36 36 36; --line: 46 46 46;
+  --fg: 245 245 245; --muted: 150 150 150; --accent: 245 245 245; --accent2: 190 190 190; --onaccent: 0 0 0;
+  --danger: 239 68 68; color-scheme: dark;
+}
+[data-theme='gold'] {
+  --bg: 10 8 4; --surface: 20 16 8; --card: 30 24 12; --hover: 46 38 18; --line: 62 50 22;
+  --fg: 250 242 224; --muted: 176 160 120; --accent: 212 175 55; --accent2: 247 220 130; --onaccent: 24 16 0;
+  --danger: 239 68 68; color-scheme: dark;
+}
+
+/* ---------- Décors (un seul calque fixe derrière toute l'interface) ---------- */
+
+html[data-deco]:not([data-force-theme]) body { background: transparent; }
+html[data-deco]:not([data-force-theme]) .ambient { display: none; }
+html[data-deco]:not([data-force-theme])::before,
+html[data-deco]:not([data-force-theme])::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+html[data-theme='aero']::before {
+  background:
+    radial-gradient(circle at 12% 18%, rgb(255 255 255 / 0.75) 0 3.5%, rgb(255 255 255 / 0.18) 3.7% 6%, transparent 6.2%),
+    radial-gradient(circle at 86% 30%, rgb(255 255 255 / 0.6) 0 2.6%, rgb(255 255 255 / 0.15) 2.8% 5%, transparent 5.2%),
+    radial-gradient(circle at 70% 82%, rgb(255 255 255 / 0.55) 0 4.2%, rgb(255 255 255 / 0.12) 4.4% 7%, transparent 7.2%),
+    radial-gradient(ellipse 120% 45% at 50% 108%, rgb(120 220 150 / 0.55), transparent 70%),
+    linear-gradient(180deg, #6fc2f0 0%, #b9e6fb 42%, #e6f7ff 72%, #d3f3df 100%);
+}
+
+html[data-theme='aquametro']::before {
+  background:
+    linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 0.05) 48%, transparent 56%),
+    linear-gradient(180deg, #021c2e 0%, #03263c 55%, #04324a 100%);
+}
+html[data-theme='aquametro'][data-deco]:not([data-force-theme])::after {
+  inset: -25vmax;
+  background:
+    radial-gradient(closest-side, rgb(0 214 143 / 0.30), transparent) 22% 30% / 60vmax 60vmax no-repeat,
+    radial-gradient(closest-side, rgb(0 168 255 / 0.28), transparent) 78% 68% / 70vmax 70vmax no-repeat,
+    radial-gradient(closest-side, rgb(120 255 220 / 0.16), transparent) 62% 8% / 46vmax 46vmax no-repeat;
+  animation: metro-drift 30s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes metro-drift {
+  from { transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1); }
+  to { transform: translate3d(5%, 4%, 0) rotate(7deg) scale(1.08); }
+}
+
+html[data-theme='xp']::before {
+  background:
+    linear-gradient(rgb(236 233 216 / 0.62), rgb(236 233 216 / 0.62)),
+    radial-gradient(ellipse 90% 40% at 30% 100%, #4aa83a, transparent 70%),
+    radial-gradient(ellipse 110% 45% at 85% 105%, #2f8a2a, transparent 70%),
+    linear-gradient(180deg, #3a7be0 0%, #7db6f0 55%, #bfe0f8 100%);
+}
+
+html[data-theme='glass']::before {
+  background:
+    radial-gradient(40vmax 40vmax at 15% 12%, rgb(90 140 255 / 0.40), transparent 70%),
+    radial-gradient(45vmax 45vmax at 88% 22%, rgb(200 100 255 / 0.32), transparent 70%),
+    radial-gradient(40vmax 40vmax at 60% 95%, rgb(60 220 230 / 0.26), transparent 70%),
+    linear-gradient(180deg, #080a1c, #0c1030);
+}
+
+html[data-theme='sunset']::before {
+  background:
+    radial-gradient(70vmax 50vmax at 50% -10%, rgb(255 107 53 / 0.40), transparent 70%),
+    radial-gradient(50vmax 40vmax at 100% 100%, rgb(255 45 120 / 0.22), transparent 70%),
+    linear-gradient(180deg, #1c0a18, #1a0b16);
+}
+
+html[data-theme='ocean']::before {
+  background:
+    radial-gradient(60vmax 45vmax at 20% -5%, rgb(0 190 255 / 0.28), transparent 70%),
+    radial-gradient(50vmax 40vmax at 90% 100%, rgb(56 120 255 / 0.24), transparent 70%),
+    linear-gradient(180deg, #03182c, #031428);
+}
+
+html[data-theme='rose']::before {
+  background:
+    radial-gradient(55vmax 40vmax at 8% 0%, rgb(251 113 133 / 0.30), transparent 70%),
+    radial-gradient(50vmax 40vmax at 100% 20%, rgb(236 72 153 / 0.20), transparent 70%),
+    linear-gradient(180deg, #fff4f7, #ffeaf0);
+}
+
+html[data-theme='vaporwave']::before {
+  background:
+    radial-gradient(circle at 50% 70%, rgb(255 211 110 / 0.55) 0 8%, rgb(255 95 162 / 0.45) 8.3% 15%, transparent 15.5%),
+    repeating-linear-gradient(90deg, rgb(255 113 206 / 0.22) 0 1px, transparent 1px 64px) bottom / 100% 32% no-repeat,
+    repeating-linear-gradient(0deg, rgb(1 205 254 / 0.20) 0 1px, transparent 1px 32px) bottom / 100% 32% no-repeat,
+    linear-gradient(180deg, #14082c 0%, #3a1366 62%, #1b0b3a 100%);
+}
+
+html[data-theme='terminal']::before {
+  background:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 3px),
+    radial-gradient(70vmax 50vmax at 50% 0%, rgb(57 255 110 / 0.10), transparent 70%),
+    #010802;
+}
+
+/* ---------- Typographies propres à certains thèmes (polices système : zéro téléchargement) ---------- */
+[data-theme='xp'] body { font-family: Tahoma, 'Segoe UI', Verdana, sans-serif; }
+[data-theme='apple'] body,
+[data-theme='apple-dark'] body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, sans-serif; }
+[data-theme='terminal'] body,
+[data-theme='terminal'] .font-display { font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace; }
+
+/* ---------- Boutons & surfaces spécifiques ---------- */
+
+/* Aero : verre brillant */
+[data-theme='aero'] .btn-primary,
+[data-theme='aero'] .bg-accent-gradient {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.55) 0, rgb(255 255 255 / 0.12) 49%, rgb(255 255 255 / 0) 50%),
+    linear-gradient(180deg, rgb(var(--accent)), rgb(var(--accent2)));
+  border-color: rgb(255 255 255 / 0.6);
+  text-shadow: 0 1px 1px rgb(0 40 80 / 0.35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), 0 5px 14px -3px rgb(var(--accent) / 0.55);
+}
+[data-theme='aero'] .btn-ghost { background: linear-gradient(180deg, #fff, rgb(225 241 252)); }
+[data-theme='aero'] .glass { background: rgb(255 255 255 / 0.58); border-color: rgb(255 255 255 / 0.7); }
+
+/* Metro Aqua : tuiles plates et angles nets */
+[data-theme='aquametro'] .btn,
+[data-theme='aquametro'] .field { border-radius: 4px; }
+[data-theme='aquametro'] .rounded-2xl,
+[data-theme='aquametro'] .rounded-3xl { border-radius: 6px; }
+[data-theme='aquametro'] .btn-primary { background: rgb(var(--accent)); box-shadow: none; }
+[data-theme='aquametro'] .glass { background: rgb(var(--surface) / 0.82); }
+
+/* XP : Luna */
+[data-theme='xp'] .btn { border-radius: 3px; }
+[data-theme='xp'] .btn-primary,
+[data-theme='xp'] .bg-accent-gradient {
+  background: linear-gradient(180deg, rgb(var(--accent2)) 0%, rgb(var(--accent)) 55%, rgb(var(--accent) / 0.88) 100%);
+  border: 1px solid rgb(10 40 130);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 1px 2px rgb(0 0 0 / 0.35);
+}
+[data-theme='xp'] .btn-ghost { background: linear-gradient(180deg, #fff, #ece9d8); border-color: rgb(0 60 116); color: #111; }
+[data-theme='xp'] .field { border-radius: 2px; border-color: #7f9db9; }
+[data-theme='xp'] .rounded-2xl,
+[data-theme='xp'] .rounded-3xl { border-radius: 6px; }
+[data-theme='xp'] .glass { background: linear-gradient(180deg, #fbfaf4, #ece9d8); border-bottom: 1px solid rgb(172 168 153); }
+
+/* Spotify / Apple : boutons unis */
+[data-theme='spotify'] .btn-primary,
+[data-theme='apple'] .btn-primary,
+[data-theme='apple-dark'] .btn-primary { background: rgb(var(--accent)); box-shadow: none; }
+[data-theme='spotify'] .btn-primary:hover:not(:disabled) { transform: scale(1.04); filter: none; }
+[data-theme='apple'] .btn-primary,
+[data-theme='apple-dark'] .btn-primary { background: linear-gradient(180deg, rgb(var(--accent2)), rgb(var(--accent))); }
+
+/* Liquid Glass : reflet de verre sur les boutons et panneaux */
+[data-theme='glass'] .btn-primary {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.35), rgb(255 255 255 / 0) 55%), linear-gradient(115deg, rgb(var(--accent)), rgb(var(--accent2)));
+  border-color: rgb(255 255 255 / 0.35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 10px 26px -10px rgb(var(--accent) / 0.8);
+}
+[data-theme='glass'] .glass { background: rgb(var(--surface) / 0.5); border-color: rgb(255 255 255 / 0.10); }
+
+/* Terminal : angles droits */
+[data-theme='terminal'] .btn,
+[data-theme='terminal'] .field { border-radius: 2px; }
+[data-theme='terminal'] .btn-primary { background: rgb(var(--accent)); box-shadow: 0 0 14px -2px rgb(var(--accent) / 0.7); }
+
+/* Mono / Or : accents sobres */
+[data-theme='mono'] .btn-primary { box-shadow: none; }
+
+/* ============================================================
+ * NOUVEAUX THÈMES : Metro Y2K, Windows XP, Mac rétro (les albums sont dans albums.css)
+ * (palettes, décors statiques ; les décors animés sont dans decor.css)
+ * ============================================================ */
+
+/* ---------- Palettes ---------- */
+
+/* Frutiger Metro (Y2K) : noir, rose acide, violet — vecteurs de la fin des années 2000 */
+[data-theme='metro'] {
+  --bg: 12 6 24; --surface: 22 10 40; --card: 30 14 54; --hover: 48 24 84; --line: 74 40 120;
+  --fg: 250 240 255; --muted: 176 150 206; --accent: 255 61 170; --accent2: 160 90 255; --onaccent: 255 255 255;
+  --danger: 255 90 110; color-scheme: dark;
+}
+/* Windows XP (Luna) : bleu, beige, bouton Démarrer vert */
+[data-theme='winxp'] {
+  --bg: 236 233 216; --surface: 245 244 234; --card: 255 255 255; --hover: 214 227 247; --line: 172 168 153;
+  --fg: 0 0 0; --muted: 84 84 84; --accent: 0 84 227; --accent2: 61 149 255; --onaccent: 255 255 255;
+  --danger: 200 30 30; color-scheme: light;
+}
+/* Mac rétro 80s : pastel rose, encre violette, menthe */
+[data-theme='retromac'] {
+  --bg: 255 190 214; --surface: 255 247 251; --card: 255 255 255; --hover: 255 226 238; --line: 70 40 100;
+  --fg: 24 12 40; --muted: 100 70 120; --accent: 255 61 154; --accent2: 0 196 220; --onaccent: 255 255 255;
+  --danger: 214 28 60; color-scheme: light;
+}
+
+/* ---------- Décors statiques (un calque fixe, zéro animation) ---------- */
+
+/* Metro Y2K : base sombre, les voiles de couleur sont dans decor.css */
+html[data-theme='metro']::before {
+  background:
+    radial-gradient(60vmax 50vmax at 50% 110%, rgb(255 61 170 / 0.16), transparent 70%),
+    linear-gradient(180deg, #0b0418 0%, #12061f 100%);
+}
+
+/* Windows XP : ciel bleu et colline verte, dessinés en dégradés */
+html[data-theme='winxp']::before {
+  background:
+    radial-gradient(ellipse 13% 4.5% at 20% 26%, rgb(255 255 255 / 0.9), transparent 72%),
+    radial-gradient(ellipse 18% 5.5% at 34% 30%, rgb(255 255 255 / 0.85), transparent 72%),
+    radial-gradient(ellipse 16% 4.5% at 72% 20%, rgb(255 255 255 / 0.85), transparent 72%),
+    radial-gradient(ellipse 22% 6% at 84% 27%, rgb(255 255 255 / 0.8), transparent 72%),
+    radial-gradient(ellipse 100% 28% at 40% 100%, rgb(200 255 130 / 0.38), transparent 70%),
+    radial-gradient(ellipse 120% 42% at 88% 126%, #3e9a22 0 98%, transparent 100%),
+    radial-gradient(ellipse 150% 62% at 26% 130%, #62b82e 0 98%, transparent 100%),
+    linear-gradient(180deg, #1d5fd8 0%, #4a92ee 36%, #8fc3f6 62%, #cde7fb 72%);
+}
+
+/* Mac rétro : ciel rose-pêche (le soleil et le sol sont dans decor.css) */
+html[data-theme='retromac']::before {
+  background: linear-gradient(180deg, #ffa6cc 0%, #ffc9e0 38%, #ffe3d0 62%, #ffd0e4 100%);
+}
+
+/* ---------- Typographies propres à certains thèmes (polices système : rien à télécharger) ---------- */
+[data-theme='winxp'] body { font-family: Tahoma, 'Segoe UI', Verdana, sans-serif; }
+[data-theme='winxp'] .font-display { font-family: 'Trebuchet MS', Tahoma, sans-serif; }
+[data-theme='retromac'] body { font-family: Geneva, Verdana, 'Segoe UI', sans-serif; }
+[data-theme='retromac'] .font-display { font-family: 'Courier New', ui-monospace, monospace; font-weight: 800; letter-spacing: 0.01em; }
+
+/* ---------- Boutons & surfaces ---------- */
+
+/* Metro Y2K : double contour blanc + noir, reflet de verre, surfaces un peu transparentes pour voir le fond */
+[data-theme='metro'] .btn-primary,
+[data-theme='metro'] .bg-accent-gradient {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.5) 0, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0) 51%),
+    linear-gradient(115deg, rgb(var(--accent)), rgb(var(--accent2)));
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #000, 0 8px 22px -6px rgb(var(--accent) / 0.7);
+}
+[data-theme='metro'] .btn-ghost { border: 2px solid rgb(255 255 255 / 0.85); box-shadow: 0 0 0 2px #000; }
+[data-theme='metro'] .bg-card { background-color: rgb(var(--card) / 0.74); }
+[data-theme='metro'] .bg-surface { background-color: rgb(var(--surface) / 0.8); }
+[data-theme='metro'] .glass { background: rgb(var(--surface) / 0.62); }
+
+/* Windows XP */
+[data-theme='winxp'] .btn { border-radius: 4px; }
+[data-theme='winxp'] .btn-primary,
+[data-theme='winxp'] .bg-accent-gradient {
+  background: linear-gradient(180deg, #7bd673 0%, #3fae38 46%, #2c8f27 100%);
+  border: 1px solid #1c6b18;
+  border-radius: 11px;
+  color: #fff;
+  text-shadow: 1px 1px 1px rgb(0 0 0 / 0.5);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 1px 3px rgb(0 0 0 / 0.4);
+}
+[data-theme='winxp'] .btn-ghost { background: linear-gradient(180deg, #fff, #ece9d8 85%, #d6d0be); border: 1px solid #003c74; color: #000; border-radius: 3px; }
+[data-theme='winxp'] .btn-ghost:hover { box-shadow: inset 0 0 0 2px #f8b330; }
+[data-theme='winxp'] .field { border-radius: 2px; border-color: #7f9db9; background: #fff; }
+[data-theme='winxp'] .rounded-2xl,
+[data-theme='winxp'] .rounded-3xl { border-radius: 8px 8px 4px 4px; }
+[data-theme='winxp'] .glass { background: linear-gradient(180deg, #fdfdf8, #ece9d8); border-color: #aca899; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Mac rétro : fenêtres à contour noir, ombre dure, boutons « pixel » */
+[data-theme='retromac'] .btn { border-radius: 6px; }
+[data-theme='retromac'] .btn-primary,
+[data-theme='retromac'] .bg-accent-gradient {
+  background: rgb(var(--accent));
+  border: 2px solid #1a0f2e;
+  color: #fff;
+  box-shadow: 3px 3px 0 #1a0f2e;
+}
+[data-theme='retromac'] .btn-primary:hover:not(:disabled) { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #1a0f2e; filter: none; }
+[data-theme='retromac'] .btn-ghost { background: #fff; border: 2px solid #1a0f2e; box-shadow: 3px 3px 0 #1a0f2e; color: #1a0f2e; }
+[data-theme='retromac'] .field { border: 2px solid #1a0f2e; border-radius: 4px; background: #fff; }
+[data-theme='retromac'] .rounded-2xl,
+[data-theme='retromac'] .rounded-3xl { border-radius: 8px; }
+[data-theme='retromac'] .glass { background: linear-gradient(180deg, #ffffff, #fff0f7); border-color: #1a0f2e; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* ---------- Page artiste : bannière propre sur les thèmes à décor de fond ----------
+ * Les thèmes classiques fondent la bannière dans la couleur de fond (inchangé). Sur les thèmes à décor,
+ * ce fondu laissait une bande dure : la bannière devient une carte arrondie, avec un voile sombre propre. */
+html[data-deco]:not([data-force-theme]) .artist-hero,
+html[data-deco]:not([data-force-theme]) .artist-hero-skel {
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+}
+html[data-deco]:not([data-force-theme]) .artist-hero {
+  border-radius: 28px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.55);
+}
+html[data-deco]:not([data-force-theme]) .artist-hero-fade {
+  background-image: linear-gradient(to top, rgb(0 0 0 / 0.68) 0%, rgb(0 0 0 / 0.3) 48%, rgb(0 0 0 / 0.22) 100%);
+}
+html[data-deco]:not([data-force-theme]) .artist-hero-skel { border-radius: 28px !important; }
+
+/* ---------- Couleur des boutons choisie par la personne ---------- */
+html[data-custom='1']:not([data-force-theme]) {
+  --accent: var(--c-accent);
+  --accent2: var(--c-accent2);
+  --onaccent: var(--c-onaccent);
+}

@@ -20,6 +20,8 @@ import {
 import { usePlayer, usePlayerTime } from '../../context/PlayerContext';
 import { useLibrary } from '../../context/LibraryContext';
 import { formatDuration } from '../../lib/format';
+import { useCoverStyle } from '../../lib/palette';
+import { useTheme } from '../../context/ThemeContext';
 import { Cover } from '../ui/Cover';
 import { Equalizer } from '../ui/Misc';
 import { tap } from '../../lib/haptics';
@@ -108,12 +110,14 @@ export function PlayerBar() {
   const { currentTrack, isPlaying, buffering, shuffle, repeat, panel, togglePlay, next, prev, toggleShuffle, cycleRepeat, togglePanel, openFullPlayer } = usePlayer();
   const { openPlaylistPicker } = useLibrary();
   const idle = !currentTrack;
+  const { appearance } = useTheme();
+  const adapt = useCoverStyle(currentTrack?.cover_url, appearance.adaptPlayer);
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat;
 
   return (
     <div
       className={`glass fixed inset-x-2 z-50 overflow-hidden rounded-2xl border border-line shadow-soft md:inset-x-0 md:overflow-visible md:rounded-none md:border-x-0 md:border-b-0 md:shadow-none ${idle ? 'hidden md:block' : ''}`}
-      style={{ bottom: 'calc(var(--mnav-h) + var(--player-gap))', height: 'var(--player-h)' }}
+      style={{ bottom: 'calc(var(--mnav-h) + var(--player-gap))', height: 'var(--player-h)', ...adapt }}
     >
       <ProgressBar variant="mobile" />
       <div className="mx-auto grid h-full max-w-[1900px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 pl-2 pr-1 md:gap-3 md:px-5 md:grid-cols-[minmax(0,1fr)_minmax(340px,640px)_minmax(0,1fr)]">

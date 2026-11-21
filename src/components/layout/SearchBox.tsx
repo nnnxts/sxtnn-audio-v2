@@ -8,7 +8,7 @@ import { releaseSubtitle, releaseYear, trackSubtitle, typeLabel } from '../../li
 import { useDebounced } from '../../lib/hooks';
 import { usePlayer } from '../../context/PlayerContext';
 import { Avatar, Cover } from '../ui/Cover';
-import { ExplicitMark, LeakBadge, VerifiedBadge } from '../ui/Badges';
+import { ExplicitMark, FriendsBadge, LeakBadge, VerifiedBadge } from '../ui/Badges';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -217,6 +217,7 @@ export function SearchBox() {
                             <span className="truncate text-sm font-semibold">{t.title}</span>
                             {t.is_explicit && <ExplicitMark />}
                             {t.is_leak && <LeakBadge />}
+                            {t.visibility === 'friends' && <FriendsBadge />}
                           </span>
                           <span className="block truncate text-xs text-muted">{trackSubtitle(t)}</span>
                         </span>
@@ -256,6 +257,7 @@ export function SearchBox() {
                           <span className="flex items-center gap-1.5">
                             <span className="truncate text-sm font-semibold">{r.title}</span>
                             {r.is_leak && <LeakBadge />}
+                            {r.visibility === 'friends' && <FriendsBadge />}
                           </span>
                           <span className="block truncate text-xs text-muted">
                             {typeLabel(r.type)} · {releaseYear(r.release_date)} · {releaseSubtitle(r)}

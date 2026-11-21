@@ -196,7 +196,9 @@ function AuthButton() {
 
 export default function Home() {
   useDocumentTitle('Accueil');
-  const { data, loading, error, reload, setData } = useApi<HomeData>('/home');
+  const { user: viewer } = useAuth();
+  // Recharge l'accueil à la connexion / déconnexion : les sorties « amis » apparaissent ou disparaissent
+  const { data, loading, error, reload, setData } = useApi<HomeData>('/home', [viewer?.id ?? 0]);
 
   // Classement "en direct" : on rafraîchit les écoutes toutes les 15 secondes
   useEffect(() => {

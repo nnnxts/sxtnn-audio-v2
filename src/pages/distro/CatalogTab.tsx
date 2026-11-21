@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Archive, Download, Headphones, Loader2, Music, Pencil, RotateCcw, Trash2 } from 'lucide-react';
-import { api, tokens, uploadForm } from '../../lib/api';
+import { Archive, Download, Headphones, Loader2, Mic2, Music, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { accessCode, api, tokens, uploadForm } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
 import type { DistroTrack, Release } from '../../lib/types';
 import { formatCount, formatReleaseDate, typeLabel } from '../../lib/format';
 import { useToast } from '../../context/ToastContext';
 import { Cover } from '../../components/ui/Cover';
-import { LeakBadge } from '../../components/ui/Badges';
+import { FriendsBadge, LeakBadge } from '../../components/ui/Badges';
 import { EmptyState, ErrorState, RowsSkeleton, Skeleton } from '../../components/ui/Misc';
 import { Modal } from '../../components/ui/Modal';
 import { ReleaseForm, fetchEditableRelease } from '../../components/distro/ReleaseForm';
+import { LyricsSyncModal } from '../../components/distro/LyricsSync';
 
 interface AdminStatus {
   key_required: boolean;
@@ -21,7 +22,7 @@ interface AdminStatus {
 function BackupCard({ status }: { status: AdminStatus | null }) {
   const { error: toastError, success } = useToast();
   const [busy, setBusy] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
+  const [adminKey, setAdminKey] = useState(() => accessCode.get());
 
   const download = async () => {
     setBusy(true);
@@ -82,7 +83,7 @@ function BackupCard({ status }: { status: AdminStatus | null }) {
 function RestoreCard({ status }: { status: AdminStatus | null }) {
   const { error: toastError, success } = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const [adminKey, setAdminKey] = useState('');
+  const [adminKey, setAdminKey] = useState(() => accessCode.get());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -215,6 +216,7 @@ export function CatalogTab({ refreshKey }: { refreshKey: number }) {
   const [editing, setEditing] = useState<{ release: Release; tracks: DistroTrack[] } | null>(null);
   const [loadingEdit, setLoadingEdit] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Release | null>(null);
+  const [lyricsFor, setLyricsFor] = useState<Release | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const openEdit = async (release: Release) => {
@@ -283,6 +285,7 @@ export function CatalogTab({ refreshKey }: { refreshKey: number }) {
                       {r.title}
                     </Link>
                     {r.is_leak && <LeakBadge />}
+                    {r.visibility === 'friends' && <FriendsBadge />}
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
                     {typeLabel(r.type)} · {formatReleaseDate(r.release_date)} · {r.track_count} morceau{r.track_count > 1 ? 'x' : ''}
@@ -291,7 +294,10 @@ export function CatalogTab({ refreshKey }: { refreshKey: number }) {
                     <Headphones size={12} /> {formatCount(r.play_count)} écoute{r.play_count > 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <button className="btn btn-ghost !px-4 !py-2.5" onClick={() => setLyricsFor(r)} title="Ajouter ou synchroniser les paroles">
+                    <Mic2 size={15} /> Paroles
+                  </button>
                   <button className="btn btn-ghost !px-4 !py-2.5" onClick={() => openEdit(r)} disabled={loadingEdit === r.id}>
                     {loadingEdit === r.id ? <Loader2 size={15} className="animate-spin" /> : <Pencil size={15} />} Modifier
                   </button>
@@ -324,6 +330,9 @@ export function CatalogTab({ refreshKey }: { refreshKey: number }) {
           </div>
         )}
       </Modal>
+
+      {/* Paroles synchronisées (sorties déjà publiées) */}
+      <LyricsSyncModal release={lyricsFor} onClose={() => setLyricsFor(null)} onSaved={reload} />
 
       {/* Confirmation de suppression */}
       <Modal open={!!toDelete} onClose={() => !deleting && setToDelete(null)} title="Supprimer cette sortie ?" size="sm">

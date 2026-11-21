@@ -126,8 +126,24 @@ Limites honnêtes : l'installation ne fonctionne qu'en ligne (pas de mode hors c
 ## 5. ⚠️ Points d'attention
 
 - **Ancienne version déjà sur Railway** : le schéma de base de données est différent. **Ne branchez pas le nouveau code sur l'ancien volume/ancienne base sans backup.** Déployez plutôt dans un *nouveau* service avec un *nouveau* volume. Pour récupérer vos anciennes données, il faudra un script de migration : il faut pour cela me fournir la structure (ou une copie) de l'ancienne base.
-- **Connexion artiste par simple nom** : comme demandé, n'importe qui qui tape un nom d'artiste existant accède à son espace Distro. Pour un site public, il est recommandé d'ajouter un code secret par artiste.
+- **Connexion artiste protégée par code** : « Accès Artiste » demande d'abord le **code d'accès** (la variable `ADMIN_KEY`, le même que pour télécharger/restaurer un backup), puis le nom d'artiste comme avant. Sans `ADMIN_KEY`, l'accès reste libre. 8 mauvais essais bloquent l'adresse pendant 10 minutes. Les anciennes sessions artiste ouvertes avant l'ajout du code sont refusées (il faut se reconnecter une fois).
 - **Fichiers uploadés** : audio (mp3, wav, flac, ogg), images (jpg, png, webp…) et canvas (mp4, webm). Taille maximale : 400 Mo par fichier audio ou image (réglable dans `server/upload.js`), 15 Mo par canvas.
+
+---
+
+## 5 bis. Nouveautés (amis, sorties privées, paroles, thèmes)
+
+- **Sortie à la une** : c'est toujours la dernière sortie publique (hors leaks) **créée ou modifiée** (nouveau titre ajouté, infos changées, paroles ajoutées…).
+- **Amis & sorties privées** : Distro → onglet **Amis** → « Créer un lien d'invitation » (usage unique, valable 7 jours). La personne ouvre le lien, se connecte à son compte puis accepte. Dans le formulaire de publication, choisissez **« Amis uniquement »** : seuls l'artiste et ses amis voient et écoutent la sortie (accueil, recherche, explorer, page artiste, paroles, fichiers audio/canvas). La liste d'amis n'est visible que dans le portail de l'artiste.
+  Les pochettes d'une sortie privée gardent une adresse impossible à deviner mais ne sont pas protégées par un jeton : ne mettez pas d'information sensible dans une pochette.
+- **Paroles synchronisées** : Distro → Catalogue → bouton **Paroles** d'une sortie déjà publiée → écoutez et appuyez sur « TOP » (ou la barre d'espace) à chaque début de ligne. Stockage au format LRC dans le même champ « paroles » ; un texte sans horodatage reste un texte simple.
+- **Thèmes** : 40 thèmes en tout (Apparence → Classiques, Rétro & Aero, plateformes, ambiances, inspirés d'albums). Option « Couleur des boutons » (par appareil) et « Adapter à la pochette » (page d'une sortie / barre de lecture).
+  - **Décors animés** (très légers, uniquement transform/opacity) : **Frutiger Aero** (nuages, bulles qui montent, herbe qui ondule), **Frutiger Metro** (style vecteur Y2K : cercles, tache d'encre, étoiles, couleurs qui glissent ; deux haut-parleurs qui pulsent pendant la lecture et s'arrêtent en douceur ; étincelles visibles seulement pendant la lecture), **Vaporwave** (grille qui défile, soleil qui pulse), **Mac Rétro 80s** (soleil rayé, sol en damier qui défile). Le rythme des haut-parleurs est simulé, pas calé sur le tempo du morceau. Apparence → **Performance → Animations du fond** les coupe d'un clic (appareil lent).
+  - **Page artiste** : sur les thèmes à décor de fond, la bannière devient une carte arrondie avec un voile sombre propre (au lieu du fondu qui laissait une bande dure). Les thèmes classiques sont inchangés.
+  - **Windows 7** (l'ancien « Windows XP », renommé, même identifiant interne) et un vrai **Windows XP** (Luna, colline verte, bouton vert). L'ancien Metro aqua reste disponible sous le nom **Metro Aqua**.
+  - **Inspirés d'albums, tous animés** (palettes et motifs originaux, pas de copie des pochettes ; code dans `src/albums.css` et `src/lib/albumGen.ts`) : **Pink Tape** (drapeau rose qui ondule, étoiles qui scintillent), **Whole Lotta Red** (rouge qui coule, grain qui tremble), **Fancy That** (rouge grunge, couronne dorée, pétales de rose), **The Life of Pablo** (lignes de texte noir qui défilent sur aplat saumon), **Graduation** (ciel violet-rose, anneaux, toques qui tombent), **Astroworld** (ciel bleu, guirlande, grande roue qui tourne, pop-corn, soleil doré), **More Chaos** (mur de plâtre, éclaboussures de sang).
+  - **Thèmes rétro ajoutés** : **Windows 95** (gris en relief, bleu marine), **Winamp** (barres LED qui suivent la lecture et retombent à la pause), **Game Boy** (quatre verts, pixels), **iMac G3** (bleu Bondi, bonbons translucides).
+- **Sauvegardes** : les nouvelles tables `friendships` et `friend_invites` sont incluses dans les backups.
 
 ---
 
@@ -147,4 +163,4 @@ Limites honnêtes : l'installation ne fonctionne qu'en ligne (pas de mode hors c
 | `PORT` | Port du serveur (Railway le fournit) | `3000` |
 | `DATA_DIR` | Dossier des données persistantes | `./data` (`/data` en production si présent) |
 | `JWT_SECRET` | Clé de signature des sessions | générée et stockée dans `DATA_DIR` |
-| `ADMIN_KEY` | Mot de passe pour télécharger / restaurer un backup (recommandé en ligne, obligatoire pour restaurer) | aucune |
+| `ADMIN_KEY` | Code d'accès : entrer dans « Accès Artiste » + télécharger / restaurer un backup (recommandé en ligne, obligatoire pour restaurer) | aucune |

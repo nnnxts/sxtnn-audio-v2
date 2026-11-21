@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { DATA_DIR } from './config.js';
+import { accessRequired } from './access.js';
 
 /** Le secret est stocké dans le volume : les connexions survivent aux redémarrages. */
 function loadSecret() {
@@ -27,8 +28,14 @@ export function signUserToken(userId) {
   return jwt.sign({ typ: 'user', id: userId }, SECRET, { expiresIn: '60d' });
 }
 
+/** `acc: 1` = la session a été ouverte avec le code d'accès (les anciennes sessions sont refusées si un code existe). */
 export function signArtistToken(artistId) {
-  return jwt.sign({ typ: 'artist', id: artistId }, SECRET, { expiresIn: '60d' });
+  return jwt.sign({ typ: 'artist', id: artistId, acc: 1 }, SECRET, { expiresIn: '60d' });
+}
+
+/** Jeton court attaché aux fichiers audio/canvas des sorties réservées aux amis. */
+export function signMediaToken(kind, id) {
+  return jwt.sign({ typ: 'media', k: kind === 'artist' ? 'a' : 'u', id }, SECRET, { expiresIn: '7d' });
 }
 
 /** Lien de téléchargement à usage unique et très court (backup .zip). */
@@ -69,10 +76,25 @@ export function requireUser(req, res, next) {
   next();
 }
 
+function validArtistPayload(payload) {
+  if (!payload) return false;
+  return !accessRequired() || payload.acc === 1;
+}
+
+/** Ajoute req.viewerArtistId si l'en-tête X-Artist-Token est valide (un artiste voit ses propres sorties privées). */
+export function attachViewer(req, _res, next) {
+  const raw = req.headers['x-artist-token'];
+  if (raw && typeof raw === 'string') {
+    const payload = verifyToken(raw.trim(), 'artist');
+    if (validArtistPayload(payload)) req.viewerArtistId = payload.id;
+  }
+  next();
+}
+
 export function requireArtist(req, res, next) {
   const token = bearer(req);
   const payload = token ? verifyToken(token, 'artist') : null;
-  if (!payload) return res.status(401).json({ error: 'Session artiste expirée. Reconnectez-vous.' });
+  if (!validArtistPayload(payload)) return res.status(401).json({ error: 'Session artiste expirée. Reconnectez-vous.' });
   req.artistId = payload.id;
   next();
 }

@@ -1,5 +1,12 @@
 export type ReleaseType = 'single' | 'ep' | 'album';
-export type ThemeId = 'oled' | 'light' | 'midnight' | 'neon' | 'emerald';
+export type ThemeId =
+  | 'oled' | 'light' | 'midnight' | 'neon' | 'emerald'
+  | 'aero' | 'metro' | 'xp' | 'spotify' | 'apple' | 'apple-dark' | 'glass' | 'sunset' | 'ocean'
+  | 'rose' | 'vaporwave' | 'terminal' | 'mocha' | 'nord' | 'mono' | 'gold'
+  | 'aquametro' | 'winxp' | 'retromac'
+  | 'pinktape' | 'wlr' | 'fancythat' | 'tlop' | 'graduation' | 'astroworld' | 'morechaos'
+  | 'win95' | 'winamp' | 'gameboy' | 'imac';
+export type Visibility = 'public' | 'friends';
 export type Density = 'comfortable' | 'compact';
 export type CoverStyle = 'rounded' | 'square';
 
@@ -39,6 +46,7 @@ export interface Track {
   cover_url: string | null;
   release_type: ReleaseType;
   is_leak: boolean;
+  visibility?: Visibility;
   release_date: string;
   primary_artist_id: number;
   artists: ArtistRef[];
@@ -56,6 +64,8 @@ export interface Release {
   cover_url: string | null;
   canvas_url: string | null;
   is_leak: boolean;
+  visibility?: Visibility;
+  updated_at?: string;
   primary_artist_id: number;
   primary_artist_name: string;
   primary_artist_verified: boolean;
@@ -133,4 +143,17 @@ export interface DistroTrack {
   play_count: number;
   mains: string[];
   feats: string[];
+}
+
+export interface DistroFriend {
+  id: number;
+  username: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+export interface DistroInvite {
+  token: string;
+  created_at: string;
+  expires_at: string;
 }

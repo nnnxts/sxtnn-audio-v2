@@ -8,7 +8,8 @@ import mediaRouter from './media.js';
 import publicRoutes from './routes/public.js';
 import accountRoutes from './routes/account.js';
 import distroRoutes from './routes/distro.js';
-import { optionalUser } from './auth.js';
+import friendsRoutes from './routes/friends.js';
+import { attachViewer, optionalUser } from './auth.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -30,8 +31,9 @@ app.use('/media', mediaRouter);
 app.use('/media', (_req, res) => res.status(404).json({ error: 'Média introuvable.' }));
 
 // API
-app.use('/api', optionalUser, publicRoutes);
+app.use('/api', optionalUser, attachViewer, publicRoutes);
 app.use('/api', accountRoutes);
+app.use('/api', friendsRoutes);
 app.use('/api', distroRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
 

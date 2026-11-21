@@ -424,6 +424,26 @@ select.field option {
   animation: heart-pop 0.45s ease;
 }
 
+/* ------------------------------ Égaliseur 4 barres ------------------------------ */
+.eq-bar {
+  height: 100%;
+  width: 3px;
+  border-radius: 9999px;
+  background: currentColor;
+  transform-origin: bottom;
+  transform: scaleY(0.3);
+  will-change: transform;
+}
+.eq-live { animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.eq-live.eq-b1 { animation-name: eq-a; animation-duration: 0.95s; animation-delay: -0.2s; }
+.eq-live.eq-b2 { animation-name: eq-b; animation-duration: 0.75s; animation-delay: -0.5s; }
+.eq-live.eq-b3 { animation-name: eq-c; animation-duration: 1.15s; animation-delay: -0.1s; }
+.eq-live.eq-b4 { animation-name: eq-d; animation-duration: 0.85s; animation-delay: -0.7s; }
+@keyframes eq-a { 0%, 100% { transform: scaleY(0.25); } 20% { transform: scaleY(1); } 45% { transform: scaleY(0.45); } 70% { transform: scaleY(0.85); } }
+@keyframes eq-b { 0%, 100% { transform: scaleY(0.6); } 25% { transform: scaleY(0.2); } 55% { transform: scaleY(1); } 80% { transform: scaleY(0.4); } }
+@keyframes eq-c { 0%, 100% { transform: scaleY(0.35); } 30% { transform: scaleY(1); } 50% { transform: scaleY(0.3); } 75% { transform: scaleY(0.9); } }
+@keyframes eq-d { 0%, 100% { transform: scaleY(0.8); } 20% { transform: scaleY(0.3); } 50% { transform: scaleY(0.7); } 85% { transform: scaleY(0.25); } }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -432,6 +452,11 @@ select.field option {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  /* L'égaliseur reste animé : c'est un indicateur de lecture, pas une décoration */
+  .eq-live.eq-b1 { animation-duration: 0.95s !important; animation-iteration-count: infinite !important; }
+  .eq-live.eq-b2 { animation-duration: 0.75s !important; animation-iteration-count: infinite !important; }
+  .eq-live.eq-b3 { animation-duration: 1.15s !important; animation-iteration-count: infinite !important; }
+  .eq-live.eq-b4 { animation-duration: 0.85s !important; animation-iteration-count: infinite !important; }
 }
 
 /* ============================================================

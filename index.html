@@ -27,6 +27,8 @@
         if (a.theme) r.setAttribute('data-theme', a.theme);
         if (a.density) r.setAttribute('data-density', a.density);
         if (a.coverStyle) r.setAttribute('data-cover', a.coverStyle);
+        if (['aero','metro','xp','vaporwave','terminal','glass','sunset','ocean','rose','aquametro','winxp','retromac','pinktape','wlr','fancythat','tlop','graduation','astroworld','morechaos','win95','winamp','gameboy','imac'].indexOf(a.theme) > -1) r.setAttribute('data-deco', '1');
+        if (a.fx === false) r.setAttribute('data-fx', '0');
       } catch (e) {}
     </script>
   </head>

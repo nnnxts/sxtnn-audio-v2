@@ -56,7 +56,7 @@ export default function ArtistPage() {
   if (loading || !data) {
     return (
       <div className="space-y-10">
-        <Skeleton className="-mx-4 h-[340px] !rounded-none sm:-mx-6 md:-mx-[var(--page-pad)] -mt-6" />
+        <Skeleton className="artist-hero-skel -mx-4 h-[340px] !rounded-none sm:-mx-6 md:-mx-[var(--page-pad)] -mt-6" />
         <RowsSkeleton count={5} />
         <CardGridSkeleton count={8} />
       </div>
@@ -87,7 +87,7 @@ export default function ArtistPage() {
   return (
     <div className="space-y-[var(--section-gap)]">
       {/* Bannière immersive pleine largeur */}
-      <section className="relative isolate -mx-4 -mt-6 overflow-hidden sm:-mx-6 md:-mx-[var(--page-pad)]">
+      <section className="artist-hero relative isolate -mx-4 -mt-6 overflow-hidden sm:-mx-6 md:-mx-[var(--page-pad)]">
         {artist.banner_url ? (
           <img src={artist.banner_url} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
         ) : (
@@ -96,7 +96,7 @@ export default function ArtistPage() {
             style={{ background: `linear-gradient(120deg, rgb(${color ?? 'var(--accent)'}) 0%, rgb(var(--accent2) / 0.6) 100%)` }}
           />
         )}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-bg via-bg/55 to-black/30" />
+        <div className="artist-hero-fade absolute inset-0 -z-10 bg-gradient-to-t from-bg via-bg/55 to-black/30" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/45 via-transparent to-transparent" />
 
         <div className="px-4 pb-8 pt-6 sm:px-6 md:px-[var(--page-pad)]">

@@ -1,4 +1,4 @@
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Lock } from 'lucide-react';
 
 export function VerifiedBadge({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
@@ -36,6 +36,18 @@ export function ExplicitBadge({ className = '' }: { className?: string }) {
       className={`inline-flex items-center rounded-md bg-black/65 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wider text-white backdrop-blur ${className}`}
     >
       Explicite
+    </span>
+  );
+}
+
+/** Sortie réservée aux amis de l'artiste */
+export function FriendsBadge({ className = '' }: { className?: string }) {
+  return (
+    <span
+      title="Visible uniquement par les amis de l'artiste"
+      className={`inline-flex items-center gap-1 rounded-md bg-violet-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wider text-white shadow-[0_0_14px_-2px_rgba(139,92,246,0.8)] ${className}`}
+    >
+      <Lock size={9} strokeWidth={3} /> Amis
     </span>
   );
 }

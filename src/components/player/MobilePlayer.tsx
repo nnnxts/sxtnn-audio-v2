@@ -19,6 +19,8 @@ import {
 import { usePlayer, usePlayerTime } from '../../context/PlayerContext';
 import { useLibrary } from '../../context/LibraryContext';
 import { useDominantColor } from '../../lib/color';
+import { useCoverStyle } from '../../lib/palette';
+import { useTheme } from '../../context/ThemeContext';
 import { useMediaQuery } from '../../lib/hooks';
 import { formatDuration, trackSubtitle } from '../../lib/format';
 import { tap } from '../../lib/haptics';
@@ -105,6 +107,8 @@ export function MobilePlayer() {
   const navigate = useNavigate();
   const controls = useDragControls();
   const color = useDominantColor(currentTrack?.cover_url);
+  const { appearance } = useTheme();
+  const adapt = useCoverStyle(currentTrack?.cover_url, appearance.adaptPlayer);
 
   const open = isMobile && fullPlayer !== null && !!currentTrack;
   const view = fullPlayer ?? 'player';
@@ -180,7 +184,7 @@ export function MobilePlayer() {
         <motion.div
           key="mobile-player"
           className="fixed inset-0 z-[60] overflow-hidden bg-black text-white md:hidden"
-          style={PLAYER_VARS}
+          style={{ ...PLAYER_VARS, ...adapt }}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}

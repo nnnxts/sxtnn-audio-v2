@@ -7,7 +7,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
 import { Cover } from './ui/Cover';
 import { Equalizer } from './ui/Misc';
-import { ExplicitMark, LeakBadge } from './ui/Badges';
+import { ExplicitMark, FriendsBadge, LeakBadge } from './ui/Badges';
 import { MenuButton, type MenuItem } from './ui/Menu';
 import { Modal } from './ui/Modal';
 import { LikeButton } from './LikeButton';
@@ -173,6 +173,7 @@ export function TrackRow({
           <span className={`truncate text-[15px] font-semibold ${isCurrent ? 'text-accent' : ''}`}>{track.title}</span>
           {track.is_explicit && <ExplicitMark />}
           {track.is_leak && <LeakBadge />}
+          {track.visibility === 'friends' && <FriendsBadge />}
         </div>
         <div className="flex items-center gap-1 text-[13px] text-muted">
           <TrackArtists track={track} />

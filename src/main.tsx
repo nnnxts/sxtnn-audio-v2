@@ -8,6 +8,9 @@ import { ThemeProvider } from './context/ThemeContext';
 import { LibraryProvider } from './context/LibraryContext';
 import { PlayerProvider } from './context/PlayerContext';
 import './index.css';
+import './themes.css';
+import './decor.css';
+import './albums.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

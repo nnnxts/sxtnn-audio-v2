@@ -9,6 +9,7 @@ import { MobilePlayer } from './components/player/MobilePlayer';
 import { AuthModal } from './components/modals/AuthModal';
 import { AppearanceModal } from './components/modals/AppearanceModal';
 import { AddToPlaylistModal } from './components/modals/AddToPlaylistModal';
+import { ThemeDecor } from './components/ThemeDecor';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import ArtistPage from './pages/ArtistPage';
@@ -17,6 +18,7 @@ import LikesPage from './pages/LikesPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistPage from './pages/PlaylistPage';
 import NotFound from './pages/NotFound';
+import InvitePage from './pages/InvitePage';
 import DistroLogin from './pages/distro/DistroLogin';
 import DistroDashboard from './pages/distro/DistroDashboard';
 
@@ -51,6 +53,7 @@ export default function App() {
   return (
     <>
       <div className="ambient" aria-hidden />
+      <ThemeDecor />
       <Routes>
         <Route element={<Shell />}>
           <Route index element={<Home />} />
@@ -60,6 +63,7 @@ export default function App() {
           <Route path="likes" element={<LikesPage />} />
           <Route path="library" element={<PlaylistsPage />} />
           <Route path="playlist/:id" element={<PlaylistPage />} />
+          <Route path="invite/:token" element={<InvitePage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/distro" element={<DistroLogin />} />

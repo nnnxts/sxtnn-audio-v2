@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, LogOut, Rocket, UserRound, Library } from 'lucide-react';
+import { ArrowLeft, LogOut, Rocket, UserRound, Library, Users } from 'lucide-react';
 import { api, tokens } from '../../lib/api';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { Artist } from '../../lib/types';
@@ -12,14 +12,16 @@ import { Skeleton } from '../../components/ui/Misc';
 import { ReleaseForm } from '../../components/distro/ReleaseForm';
 import { ProfileTab } from './ProfileTab';
 import { CatalogTab } from './CatalogTab';
+import { FriendsTab } from './FriendsTab';
 import { useForcedDarkTheme } from './useDistro';
 
-type Tab = 'profile' | 'publish' | 'catalog';
+type Tab = 'profile' | 'publish' | 'catalog' | 'friends';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'profile', label: 'Profil Artiste', icon: <UserRound size={16} /> },
   { id: 'publish', label: 'Publier une sortie', icon: <Rocket size={16} /> },
   { id: 'catalog', label: 'Catalogue & Gestion', icon: <Library size={16} /> },
+  { id: 'friends', label: 'Amis', icon: <Users size={16} /> },
 ];
 
 export default function DistroDashboard() {
@@ -150,6 +152,7 @@ export default function DistroDashboard() {
                   </div>
                 )}
                 {tab === 'catalog' && <CatalogTab refreshKey={catalogKey} />}
+                {tab === 'friends' && <FriendsTab />}
               </motion.div>
             </AnimatePresence>
           )}

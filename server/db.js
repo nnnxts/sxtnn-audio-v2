@@ -107,6 +107,24 @@ CREATE TABLE IF NOT EXISTS listens (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Amis d'un artiste (liaison anonyme : visible uniquement par l'artiste dans son portail)
+CREATE TABLE IF NOT EXISTS friendships (
+  artist_id INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (artist_id, user_id)
+);
+
+-- Liens d'invitation (usage unique, durée limitée)
+CREATE TABLE IF NOT EXISTS friend_invites (
+  token TEXT PRIMARY KEY,
+  artist_id INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL,
+  used_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  used_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_releases_artist ON releases(primary_artist_id);
 CREATE INDEX IF NOT EXISTS idx_releases_date ON releases(release_date);
 CREATE INDEX IF NOT EXISTS idx_tracks_release ON tracks(release_id, track_number);
@@ -116,6 +134,8 @@ CREATE INDEX IF NOT EXISTS idx_playlist_tracks_pl ON playlist_tracks(playlist_id
 CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_follows_user ON follows(user_id);
 CREATE INDEX IF NOT EXISTS idx_listens_user ON listens(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_user ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_invites_artist ON friend_invites(artist_id);
 `);
 
 /* ---------- Mises à jour de schéma pour les bases créées avec une ancienne version ---------- */
@@ -125,5 +145,16 @@ function ensureColumn(table, column, definition) {
 }
 ensureColumn('releases', 'canvas_url', 'TEXT');
 ensureColumn('tracks', 'canvas_url', 'TEXT');
+// Nouveautés : dernière modification (sortie à la une) et visibilité ('public' par défaut, ou 'friends')
+ensureColumn('releases', 'updated_at', 'TEXT');
+ensureColumn('releases', 'visibility', 'TEXT');
+
+// Index qui accélèrent la vérification d'accès aux fichiers (lecture des sorties privées)
+db.exec(`
+CREATE INDEX IF NOT EXISTS idx_tracks_audio ON tracks(audio_url);
+CREATE INDEX IF NOT EXISTS idx_tracks_canvas ON tracks(canvas_url);
+CREATE INDEX IF NOT EXISTS idx_releases_canvas ON releases(canvas_url);
+CREATE INDEX IF NOT EXISTS idx_releases_updated ON releases(updated_at);
+`);
 
 export default db;

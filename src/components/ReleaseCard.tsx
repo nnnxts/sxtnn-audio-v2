@@ -6,7 +6,7 @@ import { releaseSubtitle, releaseYear, typeLabel } from '../lib/format';
 import { usePlayer } from '../context/PlayerContext';
 import { usePlayRelease } from '../lib/usePlayRelease';
 import { Cover } from './ui/Cover';
-import { ExplicitBadge, LeakBadge } from './ui/Badges';
+import { ExplicitBadge, FriendsBadge, LeakBadge } from './ui/Badges';
 
 export function ReleaseCard({ release, index = 0, className = '' }: { release: Release; index?: number; className?: string }) {
   const { currentTrack, isPlaying, togglePlay } = usePlayer();
@@ -34,6 +34,7 @@ export function ReleaseCard({ release, index = 0, className = '' }: { release: R
           <Cover src={release.cover_url} alt={release.title} className="w-full" />
           <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
             {release.is_leak && <LeakBadge />}
+            {release.visibility === 'friends' && <FriendsBadge />}
             {release.has_explicit && <ExplicitBadge />}
           </div>
         </Link>

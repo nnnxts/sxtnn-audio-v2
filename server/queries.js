@@ -1,4 +1,5 @@
 import db from './db.js';
+import { tokenizeReleases, tokenizeTracks, visSql } from './visibility.js';
 
 /* ============================================================
  * Requêtes partagées + "hydratation" (ajout des artistes)
@@ -10,13 +11,15 @@ export const TRACK_SELECT = `
          CASE WHEN t.lyrics IS NOT NULL AND TRIM(t.lyrics) <> '' THEN 1 ELSE 0 END AS has_lyrics,
          COALESCE(t.canvas_url, r.canvas_url) AS canvas_url,
          r.title AS release_title, r.cover_url, r.type AS release_type, r.is_leak, r.release_date,
-         r.primary_artist_id
+         r.primary_artist_id, COALESCE(r.visibility, 'public') AS visibility
   FROM tracks t
   JOIN releases r ON r.id = t.release_id`;
 
 export const RELEASE_SELECT = `
   SELECT r.id, r.title, r.type, r.release_date, r.label, r.primary_genre, r.secondary_genre,
          r.cover_url, r.canvas_url, r.is_leak, r.primary_artist_id, r.created_at,
+         COALESCE(r.visibility, 'public') AS visibility,
+         COALESCE(r.updated_at, r.created_at) AS updated_at,
          a.name AS primary_artist_name, a.is_verified AS primary_artist_verified,
          (SELECT COUNT(*) FROM tracks t WHERE t.release_id = r.id) AS track_count,
          (SELECT COALESCE(SUM(t.duration_seconds), 0) FROM tracks t WHERE t.release_id = r.id) AS total_duration,
@@ -31,8 +34,11 @@ function placeholders(list) {
   return list.map(() => '?').join(',');
 }
 
-/** Ajoute à chaque piste la liste de ses artistes (principaux d'abord, puis feats). */
-export function hydrateTracks(rows) {
+/**
+ * Ajoute à chaque piste la liste de ses artistes (principaux d'abord, puis feats).
+ * Si `viewer` est fourni, les fichiers des sorties privées reçoivent un jeton de lecture.
+ */
+export function hydrateTracks(rows, viewer) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const links = db
@@ -54,7 +60,7 @@ export function hydrateTracks(rows) {
     });
   }
 
-  return rows.map((r) => {
+  const out = rows.map((r) => {
     const artists = (byTrack.get(r.id) || []).sort((x, y) => {
       if (x.role !== y.role) return x.role === 'main' ? -1 : 1;
       if (x.id === r.primary_artist_id) return -1;
@@ -69,10 +75,11 @@ export function hydrateTracks(rows) {
       artists,
     };
   });
+  return viewer ? tokenizeTracks(out, viewer) : out;
 }
 
 /** Ajoute à chaque sortie : artists (principaux) et features. */
-export function hydrateReleases(rows) {
+export function hydrateReleases(rows, viewer) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const links = db
@@ -93,7 +100,7 @@ export function hydrateReleases(rows) {
     target.get(l.release_id).set(l.artist_id, { id: l.artist_id, name: l.name, is_verified: !!l.is_verified });
   }
 
-  return rows.map((r) => {
+  const out = rows.map((r) => {
     const mainMap = mains.get(r.id) || new Map();
     if (!mainMap.has(r.primary_artist_id)) {
       mainMap.set(r.primary_artist_id, {
@@ -120,6 +127,8 @@ export function hydrateReleases(rows) {
       cover_url: r.cover_url,
       canvas_url: r.canvas_url || null,
       is_leak: !!r.is_leak,
+      visibility: r.visibility === 'friends' ? 'friends' : 'public',
+      updated_at: r.updated_at || r.created_at,
       primary_artist_id: r.primary_artist_id,
       primary_artist_name: r.primary_artist_name,
       primary_artist_verified: !!r.primary_artist_verified,
@@ -132,6 +141,7 @@ export function hydrateReleases(rows) {
       features,
     };
   });
+  return viewer ? tokenizeReleases(out, viewer) : out;
 }
 
 export function artistDTO(row) {
@@ -162,12 +172,14 @@ export function userDTO(row) {
   };
 }
 
-export function artistTotalPlays(artistId) {
+export function artistTotalPlays(artistId, viewer) {
   return db
     .prepare(
       `SELECT COALESCE(SUM(t.play_count), 0) AS n
-       FROM tracks t JOIN track_artists ta ON ta.track_id = t.id
-       WHERE ta.artist_id = ?`
+       FROM tracks t
+       JOIN track_artists ta ON ta.track_id = t.id
+       JOIN releases r ON r.id = t.release_id
+       WHERE ta.artist_id = ? AND ${visSql(viewer)}`
     )
     .get(artistId).n;
 }

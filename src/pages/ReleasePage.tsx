@@ -5,10 +5,12 @@ import { useApi, useDocumentTitle } from '../lib/hooks';
 import type { Release, Track } from '../lib/types';
 import { formatCount, formatReleaseDate, formatTotalDuration, typeLabel } from '../lib/format';
 import { useDominantColor } from '../lib/color';
+import { useCoverStyle } from '../lib/palette';
+import { useTheme } from '../context/ThemeContext';
 import { usePlayer } from '../context/PlayerContext';
 import { useToast } from '../context/ToastContext';
 import { Cover } from '../components/ui/Cover';
-import { LeakBadge, VerifiedBadge } from '../components/ui/Badges';
+import { FriendsBadge, LeakBadge, VerifiedBadge } from '../components/ui/Badges';
 import { ErrorState, RowsSkeleton, Skeleton } from '../components/ui/Misc';
 import { TrackRow } from '../components/TrackRow';
 
@@ -24,6 +26,9 @@ export default function ReleasePage() {
   const { currentTrack, isPlaying, playTracks, playShuffled, togglePlay, addToQueue, playCounts } = usePlayer();
   const { success } = useToast();
   const color = useDominantColor(data?.release.cover_url);
+  const { appearance } = useTheme();
+  // Option « Adapter à la pochette » : boutons de la page en dégradé aux couleurs de l'album
+  const adapt = useCoverStyle(data?.release.cover_url, appearance.adaptRelease);
 
   if (error) {
     return (
@@ -52,7 +57,7 @@ export default function ReleasePage() {
   const genres = [release.primary_genre, release.secondary_genre].filter(Boolean) as string[];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={adapt}>
       <section className="relative isolate overflow-hidden rounded-[28px] border border-line/60 shadow-soft">
         {release.cover_url && (
           <img src={release.cover_url} alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full scale-150 object-cover opacity-60 blur-[60px] saturate-150" />
@@ -76,6 +81,7 @@ export default function ReleasePage() {
               <div className="flex items-center justify-center gap-2 sm:justify-start">
                 <span className="text-xs font-bold uppercase tracking-[0.16em] text-fg/80">{typeLabel(release.type)}</span>
                 {release.is_leak && <LeakBadge />}
+                {release.visibility === 'friends' && <FriendsBadge />}
               </div>
               <h1 className="mt-2 break-words font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">{release.title}</h1>
 
